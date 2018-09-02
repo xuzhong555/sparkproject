@@ -15,10 +15,10 @@ public class ParamUtils {
 	 * @param args 命令行参数
 	 * @return 任务id
 	 */
-	public static Long getTaskIdFromArgs(String[] args) {
+	public static Integer getTaskIdFromArgs(String[] args) {
 		try {
 			if(args != null && args.length > 0) {
-				return Long.valueOf(args[0]);
+				return Integer.valueOf(args[0]);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();

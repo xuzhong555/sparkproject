@@ -60,12 +60,23 @@
                    <groupId>org.eclipse.jetty.orbit</groupId>
                     <artifactId>javax.servlet</artifactId>
                 </exclusion>
+               
+				<exclusion>
+				<groupId>org.codehaus.janino</groupId>
+				<artifactId>commons-compiler</artifactId>
+				</exclusion>
             </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-sql_2.10</artifactId>
             <version>1.5.1</version>
+<!--             <exclusions> -->
+<!-- 				<exclusion> -->
+<!-- 					<groupId>org.codehaus.janino</groupId> -->
+<!-- 					<artifactId>janino</artifactId> -->
+<!-- 				</exclusion> -->
+<!-- 			</exclusions> -->
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
@@ -93,6 +104,16 @@
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-hive_2.10</artifactId>
             <version>1.5.1</version>
+            <exclusions>
+				<exclusion>
+					<groupId>org.codehaus.janino</groupId>
+					<artifactId>janino</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.codehaus.janino</groupId>
+					<artifactId>commons-compiler</artifactId>
+				</exclusion>
+			</exclusions>
         </dependency>
         <dependency>
             <groupId>com.alibaba</groupId>
