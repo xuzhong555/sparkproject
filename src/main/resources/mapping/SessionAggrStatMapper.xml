@@ -1,0 +1,401 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.xuzhong.sparkproject.dao.SessionAggrStatMapper" >
+  <resultMap id="BaseResultMap" type="com.xuzhong.sparkproject.domain.SessionAggrStat" >
+    <id column="task_id" property="taskId" jdbcType="INTEGER" />
+    <result column="session_count" property="sessionCount" jdbcType="INTEGER" />
+    <result column="c1s_3s" property="c1s3s" jdbcType="DOUBLE" />
+    <result column="c4s_6s" property="c4s6s" jdbcType="DOUBLE" />
+    <result column="c7s_9s" property="c7s9s" jdbcType="DOUBLE" />
+    <result column="c10s_30s" property="c10s30s" jdbcType="DOUBLE" />
+    <result column="c30s_60s" property="c30s60s" jdbcType="DOUBLE" />
+    <result column="c1m_3m" property="c1m3m" jdbcType="DOUBLE" />
+    <result column="c3m_10m" property="c3m10m" jdbcType="DOUBLE" />
+    <result column="c10m_30m" property="c10m30m" jdbcType="DOUBLE" />
+    <result column="c30m" property="c30m" jdbcType="DOUBLE" />
+    <result column="c1_3" property="c13" jdbcType="DOUBLE" />
+    <result column="c4_6" property="c46" jdbcType="DOUBLE" />
+    <result column="c7_9" property="c79" jdbcType="DOUBLE" />
+    <result column="c10_30" property="c1030" jdbcType="DOUBLE" />
+    <result column="c30_60" property="c3060" jdbcType="DOUBLE" />
+    <result column="c60" property="c60" jdbcType="DOUBLE" />
+  </resultMap>
+  <sql id="Example_Where_Clause" >
+    <where >
+      <foreach collection="oredCriteria" item="criteria" separator="or" >
+        <if test="criteria.valid" >
+          <trim prefix="(" suffix=")" prefixOverrides="and" >
+            <foreach collection="criteria.criteria" item="criterion" >
+              <choose >
+                <when test="criterion.noValue" >
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue" >
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue" >
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue" >
+                  and ${criterion.condition}
+                  <foreach collection="criterion.value" item="listItem" open="(" close=")" separator="," >
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Update_By_Example_Where_Clause" >
+    <where >
+      <foreach collection="example.oredCriteria" item="criteria" separator="or" >
+        <if test="criteria.valid" >
+          <trim prefix="(" suffix=")" prefixOverrides="and" >
+            <foreach collection="criteria.criteria" item="criterion" >
+              <choose >
+                <when test="criterion.noValue" >
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue" >
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue" >
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue" >
+                  and ${criterion.condition}
+                  <foreach collection="criterion.value" item="listItem" open="(" close=")" separator="," >
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Base_Column_List" >
+    task_id, session_count, c1s_3s, c4s_6s, c7s_9s, c10s_30s, c30s_60s, c1m_3m, c3m_10m, 
+    c10m_30m, c30m, c1_3, c4_6, c7_9, c10_30, c30_60, c60
+  </sql>
+  <select id="selectByExample" resultMap="BaseResultMap" parameterType="com.xuzhong.sparkproject.domain.SessionAggrStatExample" >
+    select
+    <if test="distinct" >
+      distinct
+    </if>
+    'true' as QUERYID,
+    <include refid="Base_Column_List" />
+    from session_aggr_stat
+    <if test="_parameter != null" >
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null" >
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Integer" >
+    select 
+    <include refid="Base_Column_List" />
+    from session_aggr_stat
+    where task_id = #{taskId,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer" >
+    delete from session_aggr_stat
+    where task_id = #{taskId,jdbcType=INTEGER}
+  </delete>
+  <delete id="deleteByExample" parameterType="com.xuzhong.sparkproject.domain.SessionAggrStatExample" >
+    delete from session_aggr_stat
+    <if test="_parameter != null" >
+      <include refid="Example_Where_Clause" />
+    </if>
+  </delete>
+  <insert id="insert" parameterType="com.xuzhong.sparkproject.domain.SessionAggrStat" >
+    insert into session_aggr_stat (task_id, session_count, c1s_3s, 
+      c4s_6s, c7s_9s, c10s_30s, 
+      c30s_60s, c1m_3m, c3m_10m, 
+      c10m_30m, c30m, c1_3, c4_6, 
+      c7_9, c10_30, c30_60, c60
+      )
+    values (#{taskId,jdbcType=INTEGER}, #{sessionCount,jdbcType=INTEGER}, #{c1s3s,jdbcType=DOUBLE}, 
+      #{c4s6s,jdbcType=DOUBLE}, #{c7s9s,jdbcType=DOUBLE}, #{c10s30s,jdbcType=DOUBLE}, 
+      #{c30s60s,jdbcType=DOUBLE}, #{c1m3m,jdbcType=DOUBLE}, #{c3m10m,jdbcType=DOUBLE}, 
+      #{c10m30m,jdbcType=DOUBLE}, #{c30m,jdbcType=DOUBLE}, #{c13,jdbcType=DOUBLE}, #{c46,jdbcType=DOUBLE}, 
+      #{c79,jdbcType=DOUBLE}, #{c1030,jdbcType=DOUBLE}, #{c3060,jdbcType=DOUBLE}, #{c60,jdbcType=DOUBLE}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.xuzhong.sparkproject.domain.SessionAggrStat" >
+    insert into session_aggr_stat
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="taskId != null" >
+        task_id,
+      </if>
+      <if test="sessionCount != null" >
+        session_count,
+      </if>
+      <if test="c1s3s != null" >
+        c1s_3s,
+      </if>
+      <if test="c4s6s != null" >
+        c4s_6s,
+      </if>
+      <if test="c7s9s != null" >
+        c7s_9s,
+      </if>
+      <if test="c10s30s != null" >
+        c10s_30s,
+      </if>
+      <if test="c30s60s != null" >
+        c30s_60s,
+      </if>
+      <if test="c1m3m != null" >
+        c1m_3m,
+      </if>
+      <if test="c3m10m != null" >
+        c3m_10m,
+      </if>
+      <if test="c10m30m != null" >
+        c10m_30m,
+      </if>
+      <if test="c30m != null" >
+        c30m,
+      </if>
+      <if test="c13 != null" >
+        c1_3,
+      </if>
+      <if test="c46 != null" >
+        c4_6,
+      </if>
+      <if test="c79 != null" >
+        c7_9,
+      </if>
+      <if test="c1030 != null" >
+        c10_30,
+      </if>
+      <if test="c3060 != null" >
+        c30_60,
+      </if>
+      <if test="c60 != null" >
+        c60,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="taskId != null" >
+        #{taskId,jdbcType=INTEGER},
+      </if>
+      <if test="sessionCount != null" >
+        #{sessionCount,jdbcType=INTEGER},
+      </if>
+      <if test="c1s3s != null" >
+        #{c1s3s,jdbcType=DOUBLE},
+      </if>
+      <if test="c4s6s != null" >
+        #{c4s6s,jdbcType=DOUBLE},
+      </if>
+      <if test="c7s9s != null" >
+        #{c7s9s,jdbcType=DOUBLE},
+      </if>
+      <if test="c10s30s != null" >
+        #{c10s30s,jdbcType=DOUBLE},
+      </if>
+      <if test="c30s60s != null" >
+        #{c30s60s,jdbcType=DOUBLE},
+      </if>
+      <if test="c1m3m != null" >
+        #{c1m3m,jdbcType=DOUBLE},
+      </if>
+      <if test="c3m10m != null" >
+        #{c3m10m,jdbcType=DOUBLE},
+      </if>
+      <if test="c10m30m != null" >
+        #{c10m30m,jdbcType=DOUBLE},
+      </if>
+      <if test="c30m != null" >
+        #{c30m,jdbcType=DOUBLE},
+      </if>
+      <if test="c13 != null" >
+        #{c13,jdbcType=DOUBLE},
+      </if>
+      <if test="c46 != null" >
+        #{c46,jdbcType=DOUBLE},
+      </if>
+      <if test="c79 != null" >
+        #{c79,jdbcType=DOUBLE},
+      </if>
+      <if test="c1030 != null" >
+        #{c1030,jdbcType=DOUBLE},
+      </if>
+      <if test="c3060 != null" >
+        #{c3060,jdbcType=DOUBLE},
+      </if>
+      <if test="c60 != null" >
+        #{c60,jdbcType=DOUBLE},
+      </if>
+    </trim>
+  </insert>
+  <select id="countByExample" parameterType="com.xuzhong.sparkproject.domain.SessionAggrStatExample" resultType="java.lang.Integer" >
+    select count(*) from session_aggr_stat
+    <if test="_parameter != null" >
+      <include refid="Example_Where_Clause" />
+    </if>
+  </select>
+  <update id="updateByExampleSelective" parameterType="map" >
+    update session_aggr_stat
+    <set >
+      <if test="record.taskId != null" >
+        task_id = #{record.taskId,jdbcType=INTEGER},
+      </if>
+      <if test="record.sessionCount != null" >
+        session_count = #{record.sessionCount,jdbcType=INTEGER},
+      </if>
+      <if test="record.c1s3s != null" >
+        c1s_3s = #{record.c1s3s,jdbcType=DOUBLE},
+      </if>
+      <if test="record.c4s6s != null" >
+        c4s_6s = #{record.c4s6s,jdbcType=DOUBLE},
+      </if>
+      <if test="record.c7s9s != null" >
+        c7s_9s = #{record.c7s9s,jdbcType=DOUBLE},
+      </if>
+      <if test="record.c10s30s != null" >
+        c10s_30s = #{record.c10s30s,jdbcType=DOUBLE},
+      </if>
+      <if test="record.c30s60s != null" >
+        c30s_60s = #{record.c30s60s,jdbcType=DOUBLE},
+      </if>
+      <if test="record.c1m3m != null" >
+        c1m_3m = #{record.c1m3m,jdbcType=DOUBLE},
+      </if>
+      <if test="record.c3m10m != null" >
+        c3m_10m = #{record.c3m10m,jdbcType=DOUBLE},
+      </if>
+      <if test="record.c10m30m != null" >
+        c10m_30m = #{record.c10m30m,jdbcType=DOUBLE},
+      </if>
+      <if test="record.c30m != null" >
+        c30m = #{record.c30m,jdbcType=DOUBLE},
+      </if>
+      <if test="record.c13 != null" >
+        c1_3 = #{record.c13,jdbcType=DOUBLE},
+      </if>
+      <if test="record.c46 != null" >
+        c4_6 = #{record.c46,jdbcType=DOUBLE},
+      </if>
+      <if test="record.c79 != null" >
+        c7_9 = #{record.c79,jdbcType=DOUBLE},
+      </if>
+      <if test="record.c1030 != null" >
+        c10_30 = #{record.c1030,jdbcType=DOUBLE},
+      </if>
+      <if test="record.c3060 != null" >
+        c30_60 = #{record.c3060,jdbcType=DOUBLE},
+      </if>
+      <if test="record.c60 != null" >
+        c60 = #{record.c60,jdbcType=DOUBLE},
+      </if>
+    </set>
+    <if test="_parameter != null" >
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExample" parameterType="map" >
+    update session_aggr_stat
+    set task_id = #{record.taskId,jdbcType=INTEGER},
+      session_count = #{record.sessionCount,jdbcType=INTEGER},
+      c1s_3s = #{record.c1s3s,jdbcType=DOUBLE},
+      c4s_6s = #{record.c4s6s,jdbcType=DOUBLE},
+      c7s_9s = #{record.c7s9s,jdbcType=DOUBLE},
+      c10s_30s = #{record.c10s30s,jdbcType=DOUBLE},
+      c30s_60s = #{record.c30s60s,jdbcType=DOUBLE},
+      c1m_3m = #{record.c1m3m,jdbcType=DOUBLE},
+      c3m_10m = #{record.c3m10m,jdbcType=DOUBLE},
+      c10m_30m = #{record.c10m30m,jdbcType=DOUBLE},
+      c30m = #{record.c30m,jdbcType=DOUBLE},
+      c1_3 = #{record.c13,jdbcType=DOUBLE},
+      c4_6 = #{record.c46,jdbcType=DOUBLE},
+      c7_9 = #{record.c79,jdbcType=DOUBLE},
+      c10_30 = #{record.c1030,jdbcType=DOUBLE},
+      c30_60 = #{record.c3060,jdbcType=DOUBLE},
+      c60 = #{record.c60,jdbcType=DOUBLE}
+    <if test="_parameter != null" >
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByPrimaryKeySelective" parameterType="com.xuzhong.sparkproject.domain.SessionAggrStat" >
+    update session_aggr_stat
+    <set >
+      <if test="sessionCount != null" >
+        session_count = #{sessionCount,jdbcType=INTEGER},
+      </if>
+      <if test="c1s3s != null" >
+        c1s_3s = #{c1s3s,jdbcType=DOUBLE},
+      </if>
+      <if test="c4s6s != null" >
+        c4s_6s = #{c4s6s,jdbcType=DOUBLE},
+      </if>
+      <if test="c7s9s != null" >
+        c7s_9s = #{c7s9s,jdbcType=DOUBLE},
+      </if>
+      <if test="c10s30s != null" >
+        c10s_30s = #{c10s30s,jdbcType=DOUBLE},
+      </if>
+      <if test="c30s60s != null" >
+        c30s_60s = #{c30s60s,jdbcType=DOUBLE},
+      </if>
+      <if test="c1m3m != null" >
+        c1m_3m = #{c1m3m,jdbcType=DOUBLE},
+      </if>
+      <if test="c3m10m != null" >
+        c3m_10m = #{c3m10m,jdbcType=DOUBLE},
+      </if>
+      <if test="c10m30m != null" >
+        c10m_30m = #{c10m30m,jdbcType=DOUBLE},
+      </if>
+      <if test="c30m != null" >
+        c30m = #{c30m,jdbcType=DOUBLE},
+      </if>
+      <if test="c13 != null" >
+        c1_3 = #{c13,jdbcType=DOUBLE},
+      </if>
+      <if test="c46 != null" >
+        c4_6 = #{c46,jdbcType=DOUBLE},
+      </if>
+      <if test="c79 != null" >
+        c7_9 = #{c79,jdbcType=DOUBLE},
+      </if>
+      <if test="c1030 != null" >
+        c10_30 = #{c1030,jdbcType=DOUBLE},
+      </if>
+      <if test="c3060 != null" >
+        c30_60 = #{c3060,jdbcType=DOUBLE},
+      </if>
+      <if test="c60 != null" >
+        c60 = #{c60,jdbcType=DOUBLE},
+      </if>
+    </set>
+    where task_id = #{taskId,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.xuzhong.sparkproject.domain.SessionAggrStat" >
+    update session_aggr_stat
+    set session_count = #{sessionCount,jdbcType=INTEGER},
+      c1s_3s = #{c1s3s,jdbcType=DOUBLE},
+      c4s_6s = #{c4s6s,jdbcType=DOUBLE},
+      c7s_9s = #{c7s9s,jdbcType=DOUBLE},
+      c10s_30s = #{c10s30s,jdbcType=DOUBLE},
+      c30s_60s = #{c30s60s,jdbcType=DOUBLE},
+      c1m_3m = #{c1m3m,jdbcType=DOUBLE},
+      c3m_10m = #{c3m10m,jdbcType=DOUBLE},
+      c10m_30m = #{c10m30m,jdbcType=DOUBLE},
+      c30m = #{c30m,jdbcType=DOUBLE},
+      c1_3 = #{c13,jdbcType=DOUBLE},
+      c4_6 = #{c46,jdbcType=DOUBLE},
+      c7_9 = #{c79,jdbcType=DOUBLE},
+      c10_30 = #{c1030,jdbcType=DOUBLE},
+      c30_60 = #{c3060,jdbcType=DOUBLE},
+      c60 = #{c60,jdbcType=DOUBLE}
+    where task_id = #{taskId,jdbcType=INTEGER}
+  </update>
+</mapper>

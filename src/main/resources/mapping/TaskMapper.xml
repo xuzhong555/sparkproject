@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.xuzhong.sparkproject.dao.TaskMapper" >
+  <resultMap id="BaseResultMap" type="com.xuzhong.sparkproject.domain.Task" >
+    <id column="task_id" property="taskId" jdbcType="INTEGER" />
+    <result column="task_name" property="taskName" jdbcType="VARCHAR" />
+    <result column="create_time" property="createTime" jdbcType="VARCHAR" />
+    <result column="start_time" property="startTime" jdbcType="VARCHAR" />
+    <result column="finish_time" property="finishTime" jdbcType="VARCHAR" />
+    <result column="task_type" property="taskType" jdbcType="VARCHAR" />
+    <result column="task_status" property="taskStatus" jdbcType="VARCHAR" />
+  </resultMap>
+  <resultMap id="ResultMapWithBLOBs" type="com.xuzhong.sparkproject.domain.Task" extends="BaseResultMap" >
+    <result column="task_param" property="taskParam" jdbcType="LONGVARCHAR" />
+  </resultMap>
+  <sql id="Example_Where_Clause" >
+    <where >
+      <foreach collection="oredCriteria" item="criteria" separator="or" >
+        <if test="criteria.valid" >
+          <trim prefix="(" suffix=")" prefixOverrides="and" >
+            <foreach collection="criteria.criteria" item="criterion" >
+              <choose >
+                <when test="criterion.noValue" >
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue" >
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue" >
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue" >
+                  and ${criterion.condition}
+                  <foreach collection="criterion.value" item="listItem" open="(" close=")" separator="," >
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Update_By_Example_Where_Clause" >
+    <where >
+      <foreach collection="example.oredCriteria" item="criteria" separator="or" >
+        <if test="criteria.valid" >
+          <trim prefix="(" suffix=")" prefixOverrides="and" >
+            <foreach collection="criteria.criteria" item="criterion" >
+              <choose >
+                <when test="criterion.noValue" >
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue" >
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue" >
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue" >
+                  and ${criterion.condition}
+                  <foreach collection="criterion.value" item="listItem" open="(" close=")" separator="," >
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Base_Column_List" >
+    task_id, task_name, create_time, start_time, finish_time, task_type, task_status
+  </sql>
+  <sql id="Blob_Column_List" >
+    task_param
+  </sql>
+  <select id="selectByExampleWithBLOBs" resultMap="ResultMapWithBLOBs" parameterType="com.xuzhong.sparkproject.domain.TaskExample" >
+    select
+    <if test="distinct" >
+      distinct
+    </if>
+    'true' as QUERYID,
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from task
+    <if test="_parameter != null" >
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null" >
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByExample" resultMap="BaseResultMap" parameterType="com.xuzhong.sparkproject.domain.TaskExample" >
+    select
+    <if test="distinct" >
+      distinct
+    </if>
+    'true' as QUERYID,
+    <include refid="Base_Column_List" />
+    from task
+    <if test="_parameter != null" >
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null" >
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByPrimaryKey" resultMap="ResultMapWithBLOBs" parameterType="java.lang.Integer" >
+    select 
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from task
+    where task_id = #{taskId,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer" >
+    delete from task
+    where task_id = #{taskId,jdbcType=INTEGER}
+  </delete>
+  <delete id="deleteByExample" parameterType="com.xuzhong.sparkproject.domain.TaskExample" >
+    delete from task
+    <if test="_parameter != null" >
+      <include refid="Example_Where_Clause" />
+    </if>
+  </delete>
+  <insert id="insert" parameterType="com.xuzhong.sparkproject.domain.Task" >
+    insert into task (task_id, task_name, create_time, 
+      start_time, finish_time, task_type, 
+      task_status, task_param)
+    values (#{taskId,jdbcType=INTEGER}, #{taskName,jdbcType=VARCHAR}, #{createTime,jdbcType=VARCHAR}, 
+      #{startTime,jdbcType=VARCHAR}, #{finishTime,jdbcType=VARCHAR}, #{taskType,jdbcType=VARCHAR}, 
+      #{taskStatus,jdbcType=VARCHAR}, #{taskParam,jdbcType=LONGVARCHAR})
+  </insert>
+  <insert id="insertSelective" parameterType="com.xuzhong.sparkproject.domain.Task" >
+    insert into task
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="taskId != null" >
+        task_id,
+      </if>
+      <if test="taskName != null" >
+        task_name,
+      </if>
+      <if test="createTime != null" >
+        create_time,
+      </if>
+      <if test="startTime != null" >
+        start_time,
+      </if>
+      <if test="finishTime != null" >
+        finish_time,
+      </if>
+      <if test="taskType != null" >
+        task_type,
+      </if>
+      <if test="taskStatus != null" >
+        task_status,
+      </if>
+      <if test="taskParam != null" >
+        task_param,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="taskId != null" >
+        #{taskId,jdbcType=INTEGER},
+      </if>
+      <if test="taskName != null" >
+        #{taskName,jdbcType=VARCHAR},
+      </if>
+      <if test="createTime != null" >
+        #{createTime,jdbcType=VARCHAR},
+      </if>
+      <if test="startTime != null" >
+        #{startTime,jdbcType=VARCHAR},
+      </if>
+      <if test="finishTime != null" >
+        #{finishTime,jdbcType=VARCHAR},
+      </if>
+      <if test="taskType != null" >
+        #{taskType,jdbcType=VARCHAR},
+      </if>
+      <if test="taskStatus != null" >
+        #{taskStatus,jdbcType=VARCHAR},
+      </if>
+      <if test="taskParam != null" >
+        #{taskParam,jdbcType=LONGVARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <select id="countByExample" parameterType="com.xuzhong.sparkproject.domain.TaskExample" resultType="java.lang.Integer" >
+    select count(*) from task
+    <if test="_parameter != null" >
+      <include refid="Example_Where_Clause" />
+    </if>
+  </select>
+  <update id="updateByExampleSelective" parameterType="map" >
+    update task
+    <set >
+      <if test="record.taskId != null" >
+        task_id = #{record.taskId,jdbcType=INTEGER},
+      </if>
+      <if test="record.taskName != null" >
+        task_name = #{record.taskName,jdbcType=VARCHAR},
+      </if>
+      <if test="record.createTime != null" >
+        create_time = #{record.createTime,jdbcType=VARCHAR},
+      </if>
+      <if test="record.startTime != null" >
+        start_time = #{record.startTime,jdbcType=VARCHAR},
+      </if>
+      <if test="record.finishTime != null" >
+        finish_time = #{record.finishTime,jdbcType=VARCHAR},
+      </if>
+      <if test="record.taskType != null" >
+        task_type = #{record.taskType,jdbcType=VARCHAR},
+      </if>
+      <if test="record.taskStatus != null" >
+        task_status = #{record.taskStatus,jdbcType=VARCHAR},
+      </if>
+      <if test="record.taskParam != null" >
+        task_param = #{record.taskParam,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    <if test="_parameter != null" >
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExampleWithBLOBs" parameterType="map" >
+    update task
+    set task_id = #{record.taskId,jdbcType=INTEGER},
+      task_name = #{record.taskName,jdbcType=VARCHAR},
+      create_time = #{record.createTime,jdbcType=VARCHAR},
+      start_time = #{record.startTime,jdbcType=VARCHAR},
+      finish_time = #{record.finishTime,jdbcType=VARCHAR},
+      task_type = #{record.taskType,jdbcType=VARCHAR},
+      task_status = #{record.taskStatus,jdbcType=VARCHAR},
+      task_param = #{record.taskParam,jdbcType=LONGVARCHAR}
+    <if test="_parameter != null" >
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExample" parameterType="map" >
+    update task
+    set task_id = #{record.taskId,jdbcType=INTEGER},
+      task_name = #{record.taskName,jdbcType=VARCHAR},
+      create_time = #{record.createTime,jdbcType=VARCHAR},
+      start_time = #{record.startTime,jdbcType=VARCHAR},
+      finish_time = #{record.finishTime,jdbcType=VARCHAR},
+      task_type = #{record.taskType,jdbcType=VARCHAR},
+      task_status = #{record.taskStatus,jdbcType=VARCHAR}
+    <if test="_parameter != null" >
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByPrimaryKeySelective" parameterType="com.xuzhong.sparkproject.domain.Task" >
+    update task
+    <set >
+      <if test="taskName != null" >
+        task_name = #{taskName,jdbcType=VARCHAR},
+      </if>
+      <if test="createTime != null" >
+        create_time = #{createTime,jdbcType=VARCHAR},
+      </if>
+      <if test="startTime != null" >
+        start_time = #{startTime,jdbcType=VARCHAR},
+      </if>
+      <if test="finishTime != null" >
+        finish_time = #{finishTime,jdbcType=VARCHAR},
+      </if>
+      <if test="taskType != null" >
+        task_type = #{taskType,jdbcType=VARCHAR},
+      </if>
+      <if test="taskStatus != null" >
+        task_status = #{taskStatus,jdbcType=VARCHAR},
+      </if>
+      <if test="taskParam != null" >
+        task_param = #{taskParam,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    where task_id = #{taskId,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.xuzhong.sparkproject.domain.Task" >
+    update task
+    set task_name = #{taskName,jdbcType=VARCHAR},
+      create_time = #{createTime,jdbcType=VARCHAR},
+      start_time = #{startTime,jdbcType=VARCHAR},
+      finish_time = #{finishTime,jdbcType=VARCHAR},
+      task_type = #{taskType,jdbcType=VARCHAR},
+      task_status = #{taskStatus,jdbcType=VARCHAR},
+      task_param = #{taskParam,jdbcType=LONGVARCHAR}
+    where task_id = #{taskId,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.xuzhong.sparkproject.domain.Task" >
+    update task
+    set task_name = #{taskName,jdbcType=VARCHAR},
+      create_time = #{createTime,jdbcType=VARCHAR},
+      start_time = #{startTime,jdbcType=VARCHAR},
+      finish_time = #{finishTime,jdbcType=VARCHAR},
+      task_type = #{taskType,jdbcType=VARCHAR},
+      task_status = #{taskStatus,jdbcType=VARCHAR}
+    where task_id = #{taskId,jdbcType=INTEGER}
+  </update>
+</mapper>
