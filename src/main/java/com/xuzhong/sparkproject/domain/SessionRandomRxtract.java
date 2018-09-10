@@ -1,7 +1,11 @@
 package com.xuzhong.sparkproject.domain;
 
-public class SessionRandomRxtract {
-    private Integer taskId;
+import java.io.Serializable;
+
+public class SessionRandomRxtract implements Serializable{
+	private static final long serialVersionUID = 6853092054739860419L;
+
+	private Integer taskId;
 
     private String sessionId;
 

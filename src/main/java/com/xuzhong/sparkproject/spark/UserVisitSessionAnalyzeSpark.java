@@ -1,5 +1,6 @@
 package com.xuzhong.sparkproject.spark;
 
+import java.io.Serializable;
 import java.util.Date;
 import java.util.Iterator;
 
@@ -15,14 +16,16 @@ import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.hive.HiveContext;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.stereotype.Component;
 
 import com.alibaba.fastjson.JSONObject;
 import com.xuzhong.sparkproject.conf.ConfigurationManager;
-import com.xuzhong.sparkproject.dao.SessionAggrStatDAO;
-import com.xuzhong.sparkproject.dao.TaskDAO;
-import com.xuzhong.sparkproject.dao.factory.DAOFactory;
 import com.xuzhong.sparkproject.domain.SessionAggrStat;
 import com.xuzhong.sparkproject.domain.Task;
+import com.xuzhong.sparkproject.service.SessionAggrStatService;
+import com.xuzhong.sparkproject.service.TaskService;
 import com.xuzhong.sparkproject.util.Constants;
 import com.xuzhong.sparkproject.util.DateUtils;
 import com.xuzhong.sparkproject.util.NumberUtils;
@@ -59,11 +62,20 @@ import scala.Tuple2;
  * @author Administrator
  *
  */
-public class UserVisitSessionAnalyzeSpark {
+@Component
+public class UserVisitSessionAnalyzeSpark implements CommandLineRunner,Serializable{
 	
-	public static void main(String[] args) {
-		args = new String[]{"2"};  
-		
+
+	private static final long serialVersionUID = 13990295814000107L;
+	
+	@Autowired
+	private transient SessionAggrStatService sessionAggrStatService;
+	@Autowired
+	private transient TaskService taskService;
+	
+	
+	public void  run(String... args) throws Exception {
+//		args = new String[]{"1"};  
 		// 构建Spark上下文
 		SparkConf conf = new SparkConf()
 				.setAppName(Constants.SPARK_APP_NAME_SESSION)
@@ -74,13 +86,11 @@ public class UserVisitSessionAnalyzeSpark {
 		// 生成模拟测试数据
 		mockData(sc, sqlContext);
 		
-		// 创建需要使用的DAO组件
-		TaskDAO taskDAO = DAOFactory.getTaskDAO();
-		
 		// 首先得查询出来指定的任务，并获取任务的查询参数
-		long taskid = ParamUtils.getTaskIdFromArgs(args);
-		Task task = taskDAO.findById(taskid);
+		int taskId = ParamUtils.getTaskIdFromArgs(args);
+		Task task = taskService.selectByPrimaryKey(taskId);
 		JSONObject taskParam = JSONObject.parseObject(task.getTaskParam());
+
 		
 		// 如果要进行session粒度的数据聚合
 		// 首先要从user_visit_action表中，查询出来指定日期范围内的行为数据
@@ -125,7 +135,7 @@ public class UserVisitSessionAnalyzeSpark {
 		
 		// 计算出各个范围的session占比，并写入MySQL
 		calculateAndPersistAggrStat(sessionAggrStatAccumulator.value(),
-				task.getTaskid());
+				task.getTaskId());
 		
 		/**
 		 * session聚合统计（统计出访问时长和访问步长，各个区间的session数量占总session数量的比例）
@@ -190,7 +200,7 @@ public class UserVisitSessionAnalyzeSpark {
 	 * @param sc SparkContext
 	 * @return SQLContext
 	 */
-	private static SQLContext getSQLContext(SparkContext sc) {
+	private  SQLContext getSQLContext(SparkContext sc) {
 		boolean local = ConfigurationManager.getBoolean(Constants.SPARK_LOCAL);
 		if(local) {
 			return new SQLContext(sc);
@@ -204,7 +214,7 @@ public class UserVisitSessionAnalyzeSpark {
 	 * @param sc 
 	 * @param sqlContext
 	 */
-	private static void mockData(JavaSparkContext sc, SQLContext sqlContext) {
+	private  void mockData(JavaSparkContext sc, SQLContext sqlContext) {
 		boolean local = ConfigurationManager.getBoolean(Constants.SPARK_LOCAL);
 		if(local) {
 			MockData.mock(sc, sqlContext);  
@@ -217,7 +227,7 @@ public class UserVisitSessionAnalyzeSpark {
 	 * @param taskParam 任务参数
 	 * @return 行为数据RDD
 	 */
-	private static JavaRDD<Row> getActionRDDByDateRange(
+	private  JavaRDD<Row> getActionRDDByDateRange(
 			SQLContext sqlContext, JSONObject taskParam) {
 		String startDate = ParamUtils.getParam(taskParam, Constants.PARAM_START_DATE);
 		String endDate = ParamUtils.getParam(taskParam, Constants.PARAM_END_DATE);
@@ -238,27 +248,13 @@ public class UserVisitSessionAnalyzeSpark {
 	 * @param actionRDD 行为数据RDD
 	 * @return session粒度聚合数据
 	 */
-	private static JavaPairRDD<String, String> aggregateBySession(
+	private  JavaPairRDD<String, String> aggregateBySession(
 			SQLContext sqlContext, JavaRDD<Row> actionRDD) {
 		// 现在actionRDD中的元素是Row，一个Row就是一行用户访问行为记录，比如一次点击或者搜索
 		// 我们现在需要将这个Row映射成<sessionid,Row>的格式
-		JavaPairRDD<String, Row> sessionid2ActionRDD = actionRDD.mapToPair(
-				
-				/**
-				 * PairFunction
-				 * 第一个参数，相当于是函数的输入
-				 * 第二个参数和第三个参数，相当于是函数的输出（Tuple），分别是Tuple第一个和第二个值
-				 */
-				new PairFunction<Row, String, Row>() {
-
-					private static final long serialVersionUID = 1L;
-
-					@Override
-					public Tuple2<String, Row> call(Row row) throws Exception {
-						return new Tuple2<String, Row>(row.getString(2), row);
-					}
-					
-				});
+		JavaPairRDD<String, Row> sessionid2ActionRDD = actionRDD.mapToPair(row -> {
+				return new Tuple2<String, Row>(row.getString(2), row);
+		});
 		
 		// 对行为数据按session粒度进行分组
 		JavaPairRDD<String, Iterable<Row>> sessionid2ActionsRDD = 
@@ -270,7 +266,7 @@ public class UserVisitSessionAnalyzeSpark {
 				
 				new PairFunction<Tuple2<String,Iterable<Row>>, Long, String>() {
 					
-					private static final long serialVersionUID = 1L;
+					private  final long serialVersionUID = 1L;
 		
 					@Override
 					public Tuple2<Long, String> call(Tuple2<String, Iterable<Row>> tuple)
@@ -382,7 +378,7 @@ public class UserVisitSessionAnalyzeSpark {
 				
 				new PairFunction<Row, Long, Row>() {
 
-					private static final long serialVersionUID = 1L;
+					private  final long serialVersionUID = 1L;
 
 					@Override
 					public Tuple2<Long, Row> call(Row row) throws Exception {
@@ -400,7 +396,7 @@ public class UserVisitSessionAnalyzeSpark {
 				
 				new PairFunction<Tuple2<Long,Tuple2<String,Row>>, String, String>() {
 
-					private static final long serialVersionUID = 1L;
+					private  final long serialVersionUID = 1L;
 
 					@Override
 					public Tuple2<String, String> call(
@@ -436,7 +432,7 @@ public class UserVisitSessionAnalyzeSpark {
 	 * @param sessionid2AggrInfoRDD
 	 * @return 
 	 */
-	private static JavaPairRDD<String, String> filterSessionAndAggrStat(
+	private  JavaPairRDD<String, String> filterSessionAndAggrStat(
 			JavaPairRDD<String, String> sessionid2AggrInfoRDD, 
 			final JSONObject taskParam,
 			final Accumulator<String> sessionAggrStatAccumulator) {  
@@ -470,7 +466,7 @@ public class UserVisitSessionAnalyzeSpark {
 				
 				new Function<Tuple2<String,String>, Boolean>() {
 			
-					private static final long serialVersionUID = 1L;
+					private  final long serialVersionUID = 1L;
 			
 					@Override
 					public Boolean call(Tuple2<String, String> tuple) throws Exception {
@@ -598,9 +594,9 @@ public class UserVisitSessionAnalyzeSpark {
 	 * 计算各session范围占比，并写入MySQL
 	 * @param value
 	 */
-	private static void calculateAndPersistAggrStat(String value, long taskid) {
+	private void calculateAndPersistAggrStat(String value, int taskId) {
 		// 从Accumulator统计串中获取值
-		long session_count = Long.valueOf(StringUtils.getFieldFromConcatString(
+		int session_count = Integer.valueOf(StringUtils.getFieldFromConcatString(
 				value, "\\|", Constants.SESSION_COUNT));  
 		
 		long visit_length_1s_3s = Long.valueOf(StringUtils.getFieldFromConcatString(
@@ -670,27 +666,26 @@ public class UserVisitSessionAnalyzeSpark {
 		
 		// 将统计结果封装为Domain对象
 		SessionAggrStat sessionAggrStat = new SessionAggrStat();
-		sessionAggrStat.setTaskid(taskid);
-		sessionAggrStat.setSession_count(session_count);  
-		sessionAggrStat.setVisit_length_1s_3s_ratio(visit_length_1s_3s_ratio);  
-		sessionAggrStat.setVisit_length_4s_6s_ratio(visit_length_4s_6s_ratio);  
-		sessionAggrStat.setVisit_length_7s_9s_ratio(visit_length_7s_9s_ratio);  
-		sessionAggrStat.setVisit_length_10s_30s_ratio(visit_length_10s_30s_ratio);  
-		sessionAggrStat.setVisit_length_30s_60s_ratio(visit_length_30s_60s_ratio);  
-		sessionAggrStat.setVisit_length_1m_3m_ratio(visit_length_1m_3m_ratio); 
-		sessionAggrStat.setVisit_length_3m_10m_ratio(visit_length_3m_10m_ratio);  
-		sessionAggrStat.setVisit_length_10m_30m_ratio(visit_length_10m_30m_ratio); 
-		sessionAggrStat.setVisit_length_30m_ratio(visit_length_30m_ratio);  
-		sessionAggrStat.setStep_length_1_3_ratio(step_length_1_3_ratio);  
-		sessionAggrStat.setStep_length_4_6_ratio(step_length_4_6_ratio);  
-		sessionAggrStat.setStep_length_7_9_ratio(step_length_7_9_ratio);  
-		sessionAggrStat.setStep_length_10_30_ratio(step_length_10_30_ratio);  
-		sessionAggrStat.setStep_length_30_60_ratio(step_length_30_60_ratio);  
-		sessionAggrStat.setStep_length_60_ratio(step_length_60_ratio);  
+		sessionAggrStat.setTaskId(taskId);
+		sessionAggrStat.setSessionCount(session_count);
+		sessionAggrStat.setC1s3s(visit_length_1s_3s_ratio);
+		sessionAggrStat.setC4s6s(visit_length_4s_6s_ratio);
+		sessionAggrStat.setC7s9s(visit_length_7s_9s_ratio);
+		sessionAggrStat.setC1030(visit_length_10m_30m_ratio);
+		sessionAggrStat.setC3060(visit_length_30s_60s_ratio);
+		sessionAggrStat.setC1m3m(visit_length_1m_3m_ratio);
+		sessionAggrStat.setC3m10m(visit_length_3m_10m_ratio);
+		sessionAggrStat.setC10m30m(visit_length_10m_30m_ratio);
+		sessionAggrStat.setC30m(visit_length_30m_ratio);
+		sessionAggrStat.setC13(step_length_1_3_ratio);
+		sessionAggrStat.setC46(step_length_4_6_ratio);
+		sessionAggrStat.setC79(step_length_7_9_ratio);
+		sessionAggrStat.setC1030(step_length_10_30_ratio);
+		sessionAggrStat.setC3060(step_length_30_60_ratio);
+		sessionAggrStat.setC60(step_length_60_ratio);
 		
-		// 调用对应的DAO插入统计结果
-		SessionAggrStatDAO sessionAggrStatDAO = DAOFactory.getSessionAggrStatDAO();
-		sessionAggrStatDAO.insert(sessionAggrStat);  
+		//调用对应的DAO插入统计结果
+		sessionAggrStatService.insert(sessionAggrStat);
 	}
 	
 }
