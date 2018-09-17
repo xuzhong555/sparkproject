@@ -100,6 +100,8 @@ public class UserVisitSessionAnalyzeSpark implements CommandLineRunner,Serializa
 		SQLContext sqlContext = getSQLContext(sc.sc());
 		
 		// 生成模拟测试数据
+		//user_visit_action [2018-09-17,73,9e20665ff7d046538aed9c45928f260f,9,2018-09-17 14:42:20,null,46,69,null,null,null,null]
+		//user_info[0,user0,name0,2,professional20,city63,female]
 		mockData(sc, sqlContext);
 		
 		// 首先得查询出来指定的任务，并获取任务的查询参数
@@ -110,13 +112,16 @@ public class UserVisitSessionAnalyzeSpark implements CommandLineRunner,Serializa
 		
 		// 如果要进行session粒度的数据聚合
 		// 首先要从user_visit_action表中，查询出来指定日期范围内的行为数据
+		//[2018-09-17,73,9e20665ff7d046538aed9c45928f260f,9,2018-09-17 14:42:20,null,46,69,null,null,null,null]
 		JavaRDD<Row> actionRDD = getActionRDDByDateRange(sqlContext, taskParam);
+		//[(9e20665ff7d046538aed9c45928f260f,[2018-09-17,73,9e20665ff7d046538aed9c45928f260f,9,2018-09-17 14:42:20,null,46,69,null,null,null,null])]
 		JavaPairRDD<String, Row> sessionid2actionRDD = getSessionid2ActionRDD(actionRDD);
 		// 首先，可以将行为数据，按照session_id进行groupByKey分组
 		// 此时的数据的粒度就是session粒度了，然后呢，可以将session粒度的数据
 		// 与用户信息数据，进行join
 		// 然后就可以获取到session粒度的数据，同时呢，数据里面还包含了session对应的user的信息
 		// 到这里为止，获取的数据是<sessionid,(sessionid,searchKeywords,clickCategoryIds,age,professional,city,sex)>  
+		//[(d9784352d65d49858fc84dddee21dbae,sessionid=d9784352d65d49858fc84dddee21dbae|searchKeywords=|clickCategoryIds=0,69|visitLength=217|stepLength=2|startTime=Mon Sep 17 02:19:51 CST 2018|age=44|professional=professional32|city=city38|sex=female)]
 		JavaPairRDD<String, String> sessionid2AggrInfoRDD = 
 				aggregateBySession(sqlContext, actionRDD);
 		
@@ -127,7 +132,7 @@ public class UserVisitSessionAnalyzeSpark implements CommandLineRunner,Serializa
 		// 重构，同时进行过滤和统计
 		Accumulator<String> sessionAggrStatAccumulator = sc.accumulator(
 				"", new SessionAggrStatAccumulator());
-		
+		//[(d9784352d65d49858fc84dddee21dbae,sessionid=d9784352d65d49858fc84dddee21dbae|searchKeywords=|clickCategoryIds=0,69|visitLength=217|stepLength=2|startTime=Mon Sep 17 02:19:51 CST 2018|age=44|professional=professional32|city=city38|sex=female)]
 		JavaPairRDD<String, String> filteredSessionid2AggrInfoRDD = filterSessionAndAggrStat(
 				sessionid2AggrInfoRDD, taskParam, sessionAggrStatAccumulator);
 		
@@ -147,7 +152,7 @@ public class UserVisitSessionAnalyzeSpark implements CommandLineRunner,Serializa
 		 * 计算出来的结果，在J2EE中，是怎么显示的，是用两张柱状图显示
 		 */
 		
-		System.out.println(filteredSessionid2AggrInfoRDD.count());
+		System.err.println(filteredSessionid2AggrInfoRDD.count());
 		
 		randomExtractSession(taskId,filteredSessionid2AggrInfoRDD,sessionid2actionRDD);
 		
