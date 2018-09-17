@@ -7,14 +7,10 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.commons.io.filefilter.IOFileFilter;
-import org.apache.hadoop.hive.ql.parse.HiveParser.rowFormat_return;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
@@ -22,6 +18,11 @@ import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
+import org.apache.spark.streaming.Durations;
+import org.apache.spark.streaming.api.java.JavaDStream;
+import org.apache.spark.streaming.api.java.JavaPairDStream;
+import org.apache.spark.streaming.api.java.JavaReceiverInputDStream;
+import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -33,15 +34,36 @@ import scala.Tuple2;
 
 @SuppressWarnings("all")
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringBootTest(classes = SparkprojectApplication.class)
 public class sparkTest implements Serializable {
 
 	private String file = "C://Users//xz//Downloads//ceshi.txt";
 	private String file1 = "C://Users//xz//Downloads//ceshi1.txt";
 	
-//	private SparkConf conf = new SparkConf().setAppName("Spakr").setMaster("local");
-//	private JavaSparkContext sc = new JavaSparkContext(conf);
-//	private SQLContext sqlContext = new SQLContext(sc);
+	
+	@Test
+	public void sparkStreamingTest() {
+		SparkConf conf = new SparkConf().setAppName("Spakr").setMaster("local");
+		
+		JavaStreamingContext jssc = new JavaStreamingContext(conf, Durations.seconds(8));
+		// Create a DStream that will connect to hostname:port, like localhost:9999
+//		JavaReceiverInputDStream<String> lines = jssc.socketTextStream("localhost", 9999);
+		JavaDStream<String> lines = jssc.textFileStream(file1);
+		// Split each line into words
+		JavaDStream<String> words = lines.flatMap(s ->{
+				return Arrays.asList(s.split(" "));
+		});
+		System.err.println("-------------------------------------"+words.count());
+		// Count each word in each batch
+		JavaPairDStream<String, Integer> pairs = words.mapToPair(s -> new Tuple2<>(s, 1));
+		JavaPairDStream<String, Integer> wordCounts = pairs.reduceByKey((i1, i2) -> i1 + i2);
+
+		// Print the first ten elements of each RDD generated in this DStream to the console
+		wordCounts.print();
+		
+		jssc.start();              // Start the computation
+		jssc.awaitTermination();   // Wait for the computation to terminate
+		
+	}
 
 	
 	@Test

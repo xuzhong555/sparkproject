@@ -3,14 +3,14 @@ package com.xuzhong.sparkproject.domain;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SessionRandomRxtractExample {
+public class SessionRandomExtractExample {
     protected String orderByClause;
 
     protected boolean distinct;
 
     protected List<Criteria> oredCriteria;
 
-    public SessionRandomRxtractExample() {
+    public SessionRandomExtractExample() {
         oredCriteria = new ArrayList<Criteria>();
     }
 
@@ -102,6 +102,66 @@ public class SessionRandomRxtractExample {
                 throw new RuntimeException("Between values for " + property + " cannot be null");
             }
             criteria.add(new Criterion(condition, value1, value2));
+        }
+
+        public Criteria andIdIsNull() {
+            addCriterion("id is null");
+            return (Criteria) this;
+        }
+
+        public Criteria andIdIsNotNull() {
+            addCriterion("id is not null");
+            return (Criteria) this;
+        }
+
+        public Criteria andIdEqualTo(Integer value) {
+            addCriterion("id =", value, "id");
+            return (Criteria) this;
+        }
+
+        public Criteria andIdNotEqualTo(Integer value) {
+            addCriterion("id <>", value, "id");
+            return (Criteria) this;
+        }
+
+        public Criteria andIdGreaterThan(Integer value) {
+            addCriterion("id >", value, "id");
+            return (Criteria) this;
+        }
+
+        public Criteria andIdGreaterThanOrEqualTo(Integer value) {
+            addCriterion("id >=", value, "id");
+            return (Criteria) this;
+        }
+
+        public Criteria andIdLessThan(Integer value) {
+            addCriterion("id <", value, "id");
+            return (Criteria) this;
+        }
+
+        public Criteria andIdLessThanOrEqualTo(Integer value) {
+            addCriterion("id <=", value, "id");
+            return (Criteria) this;
+        }
+
+        public Criteria andIdIn(List<Integer> values) {
+            addCriterion("id in", values, "id");
+            return (Criteria) this;
+        }
+
+        public Criteria andIdNotIn(List<Integer> values) {
+            addCriterion("id not in", values, "id");
+            return (Criteria) this;
+        }
+
+        public Criteria andIdBetween(Integer value1, Integer value2) {
+            addCriterion("id between", value1, value2, "id");
+            return (Criteria) this;
+        }
+
+        public Criteria andIdNotBetween(Integer value1, Integer value2) {
+            addCriterion("id not between", value1, value2, "id");
+            return (Criteria) this;
         }
 
         public Criteria andTaskIdIsNull() {
@@ -304,73 +364,73 @@ public class SessionRandomRxtractExample {
             return (Criteria) this;
         }
 
-        public Criteria andEndTimeIsNull() {
-            addCriterion("end_time is null");
+        public Criteria andClickCategoryIdsIsNull() {
+            addCriterion("click_category_ids is null");
             return (Criteria) this;
         }
 
-        public Criteria andEndTimeIsNotNull() {
-            addCriterion("end_time is not null");
+        public Criteria andClickCategoryIdsIsNotNull() {
+            addCriterion("click_category_ids is not null");
             return (Criteria) this;
         }
 
-        public Criteria andEndTimeEqualTo(String value) {
-            addCriterion("end_time =", value, "endTime");
+        public Criteria andClickCategoryIdsEqualTo(String value) {
+            addCriterion("click_category_ids =", value, "clickCategoryIds");
             return (Criteria) this;
         }
 
-        public Criteria andEndTimeNotEqualTo(String value) {
-            addCriterion("end_time <>", value, "endTime");
+        public Criteria andClickCategoryIdsNotEqualTo(String value) {
+            addCriterion("click_category_ids <>", value, "clickCategoryIds");
             return (Criteria) this;
         }
 
-        public Criteria andEndTimeGreaterThan(String value) {
-            addCriterion("end_time >", value, "endTime");
+        public Criteria andClickCategoryIdsGreaterThan(String value) {
+            addCriterion("click_category_ids >", value, "clickCategoryIds");
             return (Criteria) this;
         }
 
-        public Criteria andEndTimeGreaterThanOrEqualTo(String value) {
-            addCriterion("end_time >=", value, "endTime");
+        public Criteria andClickCategoryIdsGreaterThanOrEqualTo(String value) {
+            addCriterion("click_category_ids >=", value, "clickCategoryIds");
             return (Criteria) this;
         }
 
-        public Criteria andEndTimeLessThan(String value) {
-            addCriterion("end_time <", value, "endTime");
+        public Criteria andClickCategoryIdsLessThan(String value) {
+            addCriterion("click_category_ids <", value, "clickCategoryIds");
             return (Criteria) this;
         }
 
-        public Criteria andEndTimeLessThanOrEqualTo(String value) {
-            addCriterion("end_time <=", value, "endTime");
+        public Criteria andClickCategoryIdsLessThanOrEqualTo(String value) {
+            addCriterion("click_category_ids <=", value, "clickCategoryIds");
             return (Criteria) this;
         }
 
-        public Criteria andEndTimeLike(String value) {
-            addCriterion("end_time like", value, "endTime");
+        public Criteria andClickCategoryIdsLike(String value) {
+            addCriterion("click_category_ids like", value, "clickCategoryIds");
             return (Criteria) this;
         }
 
-        public Criteria andEndTimeNotLike(String value) {
-            addCriterion("end_time not like", value, "endTime");
+        public Criteria andClickCategoryIdsNotLike(String value) {
+            addCriterion("click_category_ids not like", value, "clickCategoryIds");
             return (Criteria) this;
         }
 
-        public Criteria andEndTimeIn(List<String> values) {
-            addCriterion("end_time in", values, "endTime");
+        public Criteria andClickCategoryIdsIn(List<String> values) {
+            addCriterion("click_category_ids in", values, "clickCategoryIds");
             return (Criteria) this;
         }
 
-        public Criteria andEndTimeNotIn(List<String> values) {
-            addCriterion("end_time not in", values, "endTime");
+        public Criteria andClickCategoryIdsNotIn(List<String> values) {
+            addCriterion("click_category_ids not in", values, "clickCategoryIds");
             return (Criteria) this;
         }
 
-        public Criteria andEndTimeBetween(String value1, String value2) {
-            addCriterion("end_time between", value1, value2, "endTime");
+        public Criteria andClickCategoryIdsBetween(String value1, String value2) {
+            addCriterion("click_category_ids between", value1, value2, "clickCategoryIds");
             return (Criteria) this;
         }
 
-        public Criteria andEndTimeNotBetween(String value1, String value2) {
-            addCriterion("end_time not between", value1, value2, "endTime");
+        public Criteria andClickCategoryIdsNotBetween(String value1, String value2) {
+            addCriterion("click_category_ids not between", value1, value2, "clickCategoryIds");
             return (Criteria) this;
         }
 

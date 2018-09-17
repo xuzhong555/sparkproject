@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
-<mapper namespace="com.xuzhong.sparkproject.dao.DessionDetailMapper" >
-  <resultMap id="BaseResultMap" type="com.xuzhong.sparkproject.domain.DessionDetail" >
-    <id column="task_id" property="taskId" jdbcType="INTEGER" />
+<mapper namespace="com.xuzhong.sparkproject.dao.SessionDetailMapper" >
+  <resultMap id="BaseResultMap" type="com.xuzhong.sparkproject.domain.SessionDetail" >
+    <id column="id" property="id" jdbcType="INTEGER" />
+    <result column="task_id" property="taskId" jdbcType="INTEGER" />
     <result column="user_id" property="userId" jdbcType="INTEGER" />
     <result column="session_id" property="sessionId" jdbcType="VARCHAR" />
     <result column="page_id" property="pageId" jdbcType="INTEGER" />
@@ -74,10 +75,10 @@
     </where>
   </sql>
   <sql id="Base_Column_List" >
-    task_id, user_id, session_id, page_id, action_time, search_keyword, click_category_id, 
+    id, task_id, user_id, session_id, page_id, action_time, search_keyword, click_category_id, 
     click_product_id, order_category_ids, order_product_ids, pay_category_ids, pay_product_ids
   </sql>
-  <select id="selectByExample" resultMap="BaseResultMap" parameterType="com.xuzhong.sparkproject.domain.DessionDetailExample" >
+  <select id="selectByExample" resultMap="BaseResultMap" parameterType="com.xuzhong.sparkproject.domain.SessionDetailExample" >
     select
     <if test="distinct" >
       distinct
@@ -96,19 +97,19 @@
     select 
     <include refid="Base_Column_List" />
     from session_detail
-    where task_id = #{taskId,jdbcType=INTEGER}
+    where id = #{id,jdbcType=INTEGER}
   </select>
   <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer" >
     delete from session_detail
-    where task_id = #{taskId,jdbcType=INTEGER}
+    where id = #{id,jdbcType=INTEGER}
   </delete>
-  <delete id="deleteByExample" parameterType="com.xuzhong.sparkproject.domain.DessionDetailExample" >
+  <delete id="deleteByExample" parameterType="com.xuzhong.sparkproject.domain.SessionDetailExample" >
     delete from session_detail
     <if test="_parameter != null" >
       <include refid="Example_Where_Clause" />
     </if>
   </delete>
-  <insert id="insert" parameterType="com.xuzhong.sparkproject.domain.DessionDetail" >
+  <insert id="insert" parameterType="com.xuzhong.sparkproject.domain.SessionDetail" useGeneratedKeys="true" keyProperty="id" >
     insert into session_detail (task_id, user_id, session_id, 
       page_id, action_time, search_keyword, 
       click_category_id, click_product_id, order_category_ids, 
@@ -120,7 +121,7 @@
       #{orderProductIds,jdbcType=VARCHAR}, #{payCategoryIds,jdbcType=VARCHAR}, #{payProductIds,jdbcType=VARCHAR}
       )
   </insert>
-  <insert id="insertSelective" parameterType="com.xuzhong.sparkproject.domain.DessionDetail" >
+  <insert id="insertSelective" parameterType="com.xuzhong.sparkproject.domain.SessionDetail" useGeneratedKeys="true" keyProperty="id" >
     insert into session_detail
     <trim prefix="(" suffix=")" suffixOverrides="," >
       <if test="taskId != null" >
@@ -199,7 +200,7 @@
       </if>
     </trim>
   </insert>
-  <select id="countByExample" parameterType="com.xuzhong.sparkproject.domain.DessionDetailExample" resultType="java.lang.Integer" >
+  <select id="countByExample" parameterType="com.xuzhong.sparkproject.domain.SessionDetailExample" resultType="java.lang.Integer" >
     select count(*) from session_detail
     <if test="_parameter != null" >
       <include refid="Example_Where_Clause" />
@@ -208,6 +209,9 @@
   <update id="updateByExampleSelective" parameterType="map" >
     update session_detail
     <set >
+      <if test="record.id != null" >
+        id = #{record.id,jdbcType=INTEGER},
+      </if>
       <if test="record.taskId != null" >
         task_id = #{record.taskId,jdbcType=INTEGER},
       </if>
@@ -251,7 +255,8 @@
   </update>
   <update id="updateByExample" parameterType="map" >
     update session_detail
-    set task_id = #{record.taskId,jdbcType=INTEGER},
+    set id = #{record.id,jdbcType=INTEGER},
+      task_id = #{record.taskId,jdbcType=INTEGER},
       user_id = #{record.userId,jdbcType=INTEGER},
       session_id = #{record.sessionId,jdbcType=VARCHAR},
       page_id = #{record.pageId,jdbcType=INTEGER},
@@ -267,9 +272,12 @@
       <include refid="Update_By_Example_Where_Clause" />
     </if>
   </update>
-  <update id="updateByPrimaryKeySelective" parameterType="com.xuzhong.sparkproject.domain.DessionDetail" >
+  <update id="updateByPrimaryKeySelective" parameterType="com.xuzhong.sparkproject.domain.SessionDetail" >
     update session_detail
     <set >
+      <if test="taskId != null" >
+        task_id = #{taskId,jdbcType=INTEGER},
+      </if>
       <if test="userId != null" >
         user_id = #{userId,jdbcType=INTEGER},
       </if>
@@ -304,11 +312,12 @@
         pay_product_ids = #{payProductIds,jdbcType=VARCHAR},
       </if>
     </set>
-    where task_id = #{taskId,jdbcType=INTEGER}
+    where id = #{id,jdbcType=INTEGER}
   </update>
-  <update id="updateByPrimaryKey" parameterType="com.xuzhong.sparkproject.domain.DessionDetail" >
+  <update id="updateByPrimaryKey" parameterType="com.xuzhong.sparkproject.domain.SessionDetail" >
     update session_detail
-    set user_id = #{userId,jdbcType=INTEGER},
+    set task_id = #{taskId,jdbcType=INTEGER},
+      user_id = #{userId,jdbcType=INTEGER},
       session_id = #{sessionId,jdbcType=VARCHAR},
       page_id = #{pageId,jdbcType=INTEGER},
       action_time = #{actionTime,jdbcType=VARCHAR},
@@ -319,6 +328,6 @@
       order_product_ids = #{orderProductIds,jdbcType=VARCHAR},
       pay_category_ids = #{payCategoryIds,jdbcType=VARCHAR},
       pay_product_ids = #{payProductIds,jdbcType=VARCHAR}
-    where task_id = #{taskId,jdbcType=INTEGER}
+    where id = #{id,jdbcType=INTEGER}
   </update>
 </mapper>

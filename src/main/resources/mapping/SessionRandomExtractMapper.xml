@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
-<mapper namespace="com.xuzhong.sparkproject.dao.SessionRandomRxtractMapper" >
-  <resultMap id="BaseResultMap" type="com.xuzhong.sparkproject.domain.SessionRandomRxtract" >
-    <id column="task_id" property="taskId" jdbcType="INTEGER" />
+<mapper namespace="com.xuzhong.sparkproject.dao.SessionRandomExtractMapper" >
+  <resultMap id="BaseResultMap" type="com.xuzhong.sparkproject.domain.SessionRandomExtract" >
+    <id column="id" property="id" jdbcType="INTEGER" />
+    <result column="task_id" property="taskId" jdbcType="INTEGER" />
     <result column="session_id" property="sessionId" jdbcType="VARCHAR" />
     <result column="start_time" property="startTime" jdbcType="VARCHAR" />
-    <result column="end_time" property="endTime" jdbcType="VARCHAR" />
+    <result column="click_category_ids" property="clickCategoryIds" jdbcType="VARCHAR" />
     <result column="search_keywords" property="searchKeywords" jdbcType="VARCHAR" />
   </resultMap>
   <sql id="Example_Where_Clause" >
@@ -67,9 +68,9 @@
     </where>
   </sql>
   <sql id="Base_Column_List" >
-    task_id, session_id, start_time, end_time, search_keywords
+    id, task_id, session_id, start_time, click_category_ids, search_keywords
   </sql>
-  <select id="selectByExample" resultMap="BaseResultMap" parameterType="com.xuzhong.sparkproject.domain.SessionRandomRxtractExample" >
+  <select id="selectByExample" resultMap="BaseResultMap" parameterType="com.xuzhong.sparkproject.domain.SessionRandomExtractExample" >
     select
     <if test="distinct" >
       distinct
@@ -88,25 +89,25 @@
     select 
     <include refid="Base_Column_List" />
     from session_random_extract
-    where task_id = #{taskId,jdbcType=INTEGER}
+    where id = #{id,jdbcType=INTEGER}
   </select>
   <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer" >
     delete from session_random_extract
-    where task_id = #{taskId,jdbcType=INTEGER}
+    where id = #{id,jdbcType=INTEGER}
   </delete>
-  <delete id="deleteByExample" parameterType="com.xuzhong.sparkproject.domain.SessionRandomRxtractExample" >
+  <delete id="deleteByExample" parameterType="com.xuzhong.sparkproject.domain.SessionRandomExtractExample" >
     delete from session_random_extract
     <if test="_parameter != null" >
       <include refid="Example_Where_Clause" />
     </if>
   </delete>
-  <insert id="insert" parameterType="com.xuzhong.sparkproject.domain.SessionRandomRxtract" >
+  <insert id="insert" parameterType="com.xuzhong.sparkproject.domain.SessionRandomExtract" useGeneratedKeys="true" keyProperty="id" >
     insert into session_random_extract (task_id, session_id, start_time, 
-      end_time, search_keywords)
+      click_category_ids, search_keywords)
     values (#{taskId,jdbcType=INTEGER}, #{sessionId,jdbcType=VARCHAR}, #{startTime,jdbcType=VARCHAR}, 
-      #{endTime,jdbcType=VARCHAR}, #{searchKeywords,jdbcType=VARCHAR})
+      #{clickCategoryIds,jdbcType=VARCHAR}, #{searchKeywords,jdbcType=VARCHAR})
   </insert>
-  <insert id="insertSelective" parameterType="com.xuzhong.sparkproject.domain.SessionRandomRxtract" >
+  <insert id="insertSelective" parameterType="com.xuzhong.sparkproject.domain.SessionRandomExtract" useGeneratedKeys="true" keyProperty="id" >
     insert into session_random_extract
     <trim prefix="(" suffix=")" suffixOverrides="," >
       <if test="taskId != null" >
@@ -118,8 +119,8 @@
       <if test="startTime != null" >
         start_time,
       </if>
-      <if test="endTime != null" >
-        end_time,
+      <if test="clickCategoryIds != null" >
+        click_category_ids,
       </if>
       <if test="searchKeywords != null" >
         search_keywords,
@@ -135,15 +136,15 @@
       <if test="startTime != null" >
         #{startTime,jdbcType=VARCHAR},
       </if>
-      <if test="endTime != null" >
-        #{endTime,jdbcType=VARCHAR},
+      <if test="clickCategoryIds != null" >
+        #{clickCategoryIds,jdbcType=VARCHAR},
       </if>
       <if test="searchKeywords != null" >
         #{searchKeywords,jdbcType=VARCHAR},
       </if>
     </trim>
   </insert>
-  <select id="countByExample" parameterType="com.xuzhong.sparkproject.domain.SessionRandomRxtractExample" resultType="java.lang.Integer" >
+  <select id="countByExample" parameterType="com.xuzhong.sparkproject.domain.SessionRandomExtractExample" resultType="java.lang.Integer" >
     select count(*) from session_random_extract
     <if test="_parameter != null" >
       <include refid="Example_Where_Clause" />
@@ -152,6 +153,9 @@
   <update id="updateByExampleSelective" parameterType="map" >
     update session_random_extract
     <set >
+      <if test="record.id != null" >
+        id = #{record.id,jdbcType=INTEGER},
+      </if>
       <if test="record.taskId != null" >
         task_id = #{record.taskId,jdbcType=INTEGER},
       </if>
@@ -161,8 +165,8 @@
       <if test="record.startTime != null" >
         start_time = #{record.startTime,jdbcType=VARCHAR},
       </if>
-      <if test="record.endTime != null" >
-        end_time = #{record.endTime,jdbcType=VARCHAR},
+      <if test="record.clickCategoryIds != null" >
+        click_category_ids = #{record.clickCategoryIds,jdbcType=VARCHAR},
       </if>
       <if test="record.searchKeywords != null" >
         search_keywords = #{record.searchKeywords,jdbcType=VARCHAR},
@@ -174,39 +178,44 @@
   </update>
   <update id="updateByExample" parameterType="map" >
     update session_random_extract
-    set task_id = #{record.taskId,jdbcType=INTEGER},
+    set id = #{record.id,jdbcType=INTEGER},
+      task_id = #{record.taskId,jdbcType=INTEGER},
       session_id = #{record.sessionId,jdbcType=VARCHAR},
       start_time = #{record.startTime,jdbcType=VARCHAR},
-      end_time = #{record.endTime,jdbcType=VARCHAR},
+      click_category_ids = #{record.clickCategoryIds,jdbcType=VARCHAR},
       search_keywords = #{record.searchKeywords,jdbcType=VARCHAR}
     <if test="_parameter != null" >
       <include refid="Update_By_Example_Where_Clause" />
     </if>
   </update>
-  <update id="updateByPrimaryKeySelective" parameterType="com.xuzhong.sparkproject.domain.SessionRandomRxtract" >
+  <update id="updateByPrimaryKeySelective" parameterType="com.xuzhong.sparkproject.domain.SessionRandomExtract" >
     update session_random_extract
     <set >
+      <if test="taskId != null" >
+        task_id = #{taskId,jdbcType=INTEGER},
+      </if>
       <if test="sessionId != null" >
         session_id = #{sessionId,jdbcType=VARCHAR},
       </if>
       <if test="startTime != null" >
         start_time = #{startTime,jdbcType=VARCHAR},
       </if>
-      <if test="endTime != null" >
-        end_time = #{endTime,jdbcType=VARCHAR},
+      <if test="clickCategoryIds != null" >
+        click_category_ids = #{clickCategoryIds,jdbcType=VARCHAR},
       </if>
       <if test="searchKeywords != null" >
         search_keywords = #{searchKeywords,jdbcType=VARCHAR},
       </if>
     </set>
-    where task_id = #{taskId,jdbcType=INTEGER}
+    where id = #{id,jdbcType=INTEGER}
   </update>
-  <update id="updateByPrimaryKey" parameterType="com.xuzhong.sparkproject.domain.SessionRandomRxtract" >
+  <update id="updateByPrimaryKey" parameterType="com.xuzhong.sparkproject.domain.SessionRandomExtract" >
     update session_random_extract
-    set session_id = #{sessionId,jdbcType=VARCHAR},
+    set task_id = #{taskId,jdbcType=INTEGER},
+      session_id = #{sessionId,jdbcType=VARCHAR},
       start_time = #{startTime,jdbcType=VARCHAR},
-      end_time = #{endTime,jdbcType=VARCHAR},
+      click_category_ids = #{clickCategoryIds,jdbcType=VARCHAR},
       search_keywords = #{searchKeywords,jdbcType=VARCHAR}
-    where task_id = #{taskId,jdbcType=INTEGER}
+    where id = #{id,jdbcType=INTEGER}
   </update>
 </mapper>

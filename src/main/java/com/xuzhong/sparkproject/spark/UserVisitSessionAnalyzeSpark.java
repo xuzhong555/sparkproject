@@ -30,11 +30,14 @@ import org.springframework.stereotype.Component;
 import com.alibaba.fastjson.JSONObject;
 import com.xuzhong.sparkproject.conf.ConfigurationManager;
 import com.xuzhong.sparkproject.domain.SessionAggrStat;
-import com.xuzhong.sparkproject.domain.SessionRandomRxtract;
+import com.xuzhong.sparkproject.domain.SessionDetail;
+import com.xuzhong.sparkproject.domain.SessionRandomExtract;
 import com.xuzhong.sparkproject.domain.Task;
 import com.xuzhong.sparkproject.service.SessionAggrStatService;
-import com.xuzhong.sparkproject.service.SessionRandomRxtractService;
+import com.xuzhong.sparkproject.service.SessionDetailService;
+import com.xuzhong.sparkproject.service.SessionRandomExtractService;
 import com.xuzhong.sparkproject.service.TaskService;
+import com.xuzhong.sparkproject.util.ApplicationContextUtils;
 import com.xuzhong.sparkproject.util.Constants;
 import com.xuzhong.sparkproject.util.DateUtils;
 import com.xuzhong.sparkproject.util.NumberUtils;
@@ -82,7 +85,9 @@ public class UserVisitSessionAnalyzeSpark implements CommandLineRunner,Serializa
 	@Autowired
 	private transient TaskService taskService;
 	@Autowired
-	private transient SessionRandomRxtractService sessionRandomExtractService;
+	private transient SessionRandomExtractService sessionRandomExtractService;
+	@Autowired
+	private transient SessionDetailService sessionDetailService;
 	
 	
 	public void  run(String... args) throws Exception {
@@ -780,17 +785,18 @@ public class UserVisitSessionAnalyzeSpark implements CommandLineRunner,Serializa
 									sessionAggrInfo, "\\|", Constants.FIELD_SESSION_ID);
 							
 							// 将数据写入MySQL
-							SessionRandomRxtract sessionRandomExtract = new SessionRandomRxtract();
+							SessionRandomExtract sessionRandomExtract = new SessionRandomExtract();
 							sessionRandomExtract.setTaskId(taskId);
 							sessionRandomExtract.setSessionId(sessionid);  
 							sessionRandomExtract.setStartTime(StringUtils.getFieldFromConcatString(
 									sessionAggrInfo, "\\|", Constants.FIELD_START_TIME));  
 							sessionRandomExtract.setSearchKeywords(StringUtils.getFieldFromConcatString(
 									sessionAggrInfo, "\\|", Constants.FIELD_SEARCH_KEYWORDS));
-							sessionRandomExtract.setEndTime(StringUtils.getFieldFromConcatString(
+							sessionRandomExtract.setClickCategoryIds(StringUtils.getFieldFromConcatString(
 									sessionAggrInfo, "\\|", Constants.FIELD_CLICK_CATEGORY_IDS));
 							
-							sessionRandomExtractService.insert(sessionRandomExtract);  
+							SessionRandomExtractService sessionRandomExtractService1 = ApplicationContextUtils.getBean(SessionRandomExtractService.class);
+							sessionRandomExtractService1.insert(sessionRandomExtract);  
 							
 							// 将sessionid加入list
 							extractSessionids.add(new Tuple2<String, String>(sessionid, sessionid));  
@@ -820,20 +826,21 @@ public class UserVisitSessionAnalyzeSpark implements CommandLineRunner,Serializa
 				Row row = tuple._2._2;
 				
 				SessionDetail sessionDetail = new SessionDetail();
-				sessionDetail.setTaskid(taskId);  
-				sessionDetail.setUserid(row.getLong(1));  
-				sessionDetail.setSessionid(row.getString(2));  
-				sessionDetail.setPageid(row.getLong(3));  
+				sessionDetail.setTaskId(taskId);  
+				sessionDetail.setUserId((int)row.getLong(1));  
+				sessionDetail.setSessionId(row.getString(2));  
+				sessionDetail.setPageId((int)row.getLong(3));  
 				sessionDetail.setActionTime(row.getString(4));
 				sessionDetail.setSearchKeyword(row.getString(5));  
-				sessionDetail.setClickCategoryId(row.getLong(6));  
-				sessionDetail.setClickProductId(row.getLong(7));   
+				sessionDetail.setClickCategoryId((int)row.getLong(6));  
+				sessionDetail.setClickProductId((int)row.getLong(7));   
 				sessionDetail.setOrderCategoryIds(row.getString(8));  
 				sessionDetail.setOrderProductIds(row.getString(9));  
 				sessionDetail.setPayCategoryIds(row.getString(10)); 
 				sessionDetail.setPayProductIds(row.getString(11));  
 				
-				sessionDetailDAO.insert(sessionDetail);  
+				SessionDetailService sessionDetailService1 = ApplicationContextUtils.getBean(SessionDetailService.class);
+				sessionDetailService1.insert(sessionDetail);  
 			}
 		});
 		

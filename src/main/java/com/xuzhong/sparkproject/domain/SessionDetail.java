@@ -1,6 +1,8 @@
 package com.xuzhong.sparkproject.domain;
 
-public class DessionDetail {
+public class SessionDetail{
+    private Integer id;
+
     private Integer taskId;
 
     private Integer userId;
@@ -24,6 +26,14 @@ public class DessionDetail {
     private String payCategoryIds;
 
     private String payProductIds;
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
 
     public Integer getTaskId() {
         return taskId;

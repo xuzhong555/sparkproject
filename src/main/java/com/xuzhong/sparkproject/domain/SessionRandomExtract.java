@@ -1,19 +1,25 @@
 package com.xuzhong.sparkproject.domain;
 
-import java.io.Serializable;
+public class SessionRandomExtract {
+    private Integer id;
 
-public class SessionRandomRxtract implements Serializable{
-	private static final long serialVersionUID = 6853092054739860419L;
-
-	private Integer taskId;
+    private Integer taskId;
 
     private String sessionId;
 
     private String startTime;
 
-    private String endTime;
+    private String clickCategoryIds;
 
     private String searchKeywords;
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
 
     public Integer getTaskId() {
         return taskId;
@@ -39,12 +45,12 @@ public class SessionRandomRxtract implements Serializable{
         this.startTime = startTime == null ? null : startTime.trim();
     }
 
-    public String getEndTime() {
-        return endTime;
+    public String getClickCategoryIds() {
+        return clickCategoryIds;
     }
 
-    public void setEndTime(String endTime) {
-        this.endTime = endTime == null ? null : endTime.trim();
+    public void setClickCategoryIds(String clickCategoryIds) {
+        this.clickCategoryIds = clickCategoryIds == null ? null : clickCategoryIds.trim();
     }
 
     public String getSearchKeywords() {
