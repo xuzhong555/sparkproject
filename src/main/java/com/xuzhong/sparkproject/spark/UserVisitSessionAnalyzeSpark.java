@@ -413,7 +413,7 @@ public class UserVisitSessionAnalyzeSpark implements CommandLineRunner,Serializa
 								+ Constants.FIELD_CLICK_CATEGORY_IDS + "=" + clickCategoryIds + "|"
 								+ Constants.FIELD_VISIT_LENGTH + "=" + visitLength + "|"
 								+ Constants.FIELD_STEP_LENGTH + "=" + stepLength + "|"
-								+ Constants.FIELD_START_TIME + "=" + startTime;  
+								+ Constants.FIELD_START_TIME + "=" + DateUtils.formatTime(startTime);  
 						
 						return new Tuple2<Long, String>(userid, partAggrInfo);
 					}
