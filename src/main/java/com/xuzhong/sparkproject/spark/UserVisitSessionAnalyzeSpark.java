@@ -16,6 +16,7 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.api.java.function.VoidFunction;
@@ -28,6 +29,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 import com.alibaba.fastjson.JSONObject;
+import com.google.common.base.Optional;
 import com.xuzhong.sparkproject.conf.ConfigurationManager;
 import com.xuzhong.sparkproject.domain.SessionAggrStat;
 import com.xuzhong.sparkproject.domain.SessionDetail;
@@ -220,9 +222,12 @@ public class UserVisitSessionAnalyzeSpark implements CommandLineRunner,Serializa
 		 * 
 		 */
 		
+		getTop10Categary(filteredSessionid2AggrInfoRDD,sessionid2actionRDD);
+		
 		// 关闭Spark上下文
 		sc.close(); 
 	}
+
 
 	/**
 	 * 获取SQLContext
@@ -280,15 +285,8 @@ public class UserVisitSessionAnalyzeSpark implements CommandLineRunner,Serializa
 	 * @return
 	 */
 	public static JavaPairRDD<String, Row> getSessionid2ActionRDD(JavaRDD<Row> actionRDD) {
-		return actionRDD.mapToPair(new PairFunction<Row, String, Row>() {
-
-			private static final long serialVersionUID = 1L;
-
-			@Override
-			public Tuple2<String, Row> call(Row row) throws Exception {
-				return new Tuple2<String, Row>(row.getString(2), row);  
-			}
-			
+		return actionRDD.mapToPair(row ->{
+			return new Tuple2<String, Row>(row.getString(2), row);  
 		});
 	}
 	
@@ -311,168 +309,140 @@ public class UserVisitSessionAnalyzeSpark implements CommandLineRunner,Serializa
 		
 		// 对每一个session分组进行聚合，将session中所有的搜索词和点击品类都聚合起来
 		// 到此为止，获取的数据格式，如下：<userid,partAggrInfo(sessionid,searchKeywords,clickCategoryIds)>
-		JavaPairRDD<Long, String> userid2PartAggrInfoRDD = sessionid2ActionsRDD.mapToPair(
+		JavaPairRDD<Long, String> userid2PartAggrInfoRDD = sessionid2ActionsRDD.mapToPair(tuple -> {
+				String sessionid = tuple._1;
+				Iterator<Row> iterator = tuple._2.iterator();
 				
-				new PairFunction<Tuple2<String,Iterable<Row>>, Long, String>() {
+				StringBuffer searchKeywordsBuffer = new StringBuffer("");
+				StringBuffer clickCategoryIdsBuffer = new StringBuffer("");
+				
+				Long userid = null;
+				
+				// session的起始和结束时间
+				Date startTime = null;
+				Date endTime = null;
+				// session的访问步长
+				int stepLength = 0;
+				
+				// 遍历session所有的访问行为
+				while(iterator.hasNext()) {
+					// 提取每个访问行为的搜索词字段和点击品类字段
+					Row row = iterator.next();
+					if(userid == null) {
+						userid = row.getLong(1);
+					}
+					String searchKeyword = row.getString(5);
+					Long clickCategoryId = row.getLong(6);
 					
-					private  final long serialVersionUID = 1L;
-		
-					@Override
-					public Tuple2<Long, String> call(Tuple2<String, Iterable<Row>> tuple)
-							throws Exception {
-						String sessionid = tuple._1;
-						Iterator<Row> iterator = tuple._2.iterator();
-						
-						StringBuffer searchKeywordsBuffer = new StringBuffer("");
-						StringBuffer clickCategoryIdsBuffer = new StringBuffer("");
-						
-						Long userid = null;
-						
-						// session的起始和结束时间
-						Date startTime = null;
-						Date endTime = null;
-						// session的访问步长
-						int stepLength = 0;
-						
-						// 遍历session所有的访问行为
-						while(iterator.hasNext()) {
-							// 提取每个访问行为的搜索词字段和点击品类字段
-							Row row = iterator.next();
-							if(userid == null) {
-								userid = row.getLong(1);
-							}
-							String searchKeyword = row.getString(5);
-							Long clickCategoryId = row.getLong(6);
-							
-							// 实际上这里要对数据说明一下
-							// 并不是每一行访问行为都有searchKeyword何clickCategoryId两个字段的
-							// 其实，只有搜索行为，是有searchKeyword字段的
-							// 只有点击品类的行为，是有clickCategoryId字段的
-							// 所以，任何一行行为数据，都不可能两个字段都有，所以数据是可能出现null值的
-							
-							// 我们决定是否将搜索词或点击品类id拼接到字符串中去
-							// 首先要满足：不能是null值
-							// 其次，之前的字符串中还没有搜索词或者点击品类id
-							
-							if(StringUtils.isNotEmpty(searchKeyword)) {
-								if(!searchKeywordsBuffer.toString().contains(searchKeyword)) {
-									searchKeywordsBuffer.append(searchKeyword + ",");  
-								}
-							}
-							if(clickCategoryId != null) {
-								if(!clickCategoryIdsBuffer.toString().contains(
-										String.valueOf(clickCategoryId))) {   
-									clickCategoryIdsBuffer.append(clickCategoryId + ",");  
-								}
-							}
-							
-							// 计算session开始和结束时间
-							Date actionTime = DateUtils.parseTime(row.getString(4));
-							
-							if(startTime == null) {
-								startTime = actionTime;
-							}
-							if(endTime == null) {
-								endTime = actionTime;
-							}
-							
-							if(actionTime.before(startTime)) {
-								startTime = actionTime;
-							}
-							if(actionTime.after(endTime)) {
-								endTime = actionTime;
-							}
-							
-							// 计算session访问步长
-							stepLength++;
+					// 实际上这里要对数据说明一下
+					// 并不是每一行访问行为都有searchKeyword何clickCategoryId两个字段的
+					// 其实，只有搜索行为，是有searchKeyword字段的
+					// 只有点击品类的行为，是有clickCategoryId字段的
+					// 所以，任何一行行为数据，都不可能两个字段都有，所以数据是可能出现null值的
+					
+					// 我们决定是否将搜索词或点击品类id拼接到字符串中去
+					// 首先要满足：不能是null值
+					// 其次，之前的字符串中还没有搜索词或者点击品类id
+					
+					if(StringUtils.isNotEmpty(searchKeyword)) {
+						if(!searchKeywordsBuffer.toString().contains(searchKeyword)) {
+							searchKeywordsBuffer.append(searchKeyword + ",");  
 						}
-						
-						String searchKeywords = StringUtils.trimComma(searchKeywordsBuffer.toString());
-						String clickCategoryIds = StringUtils.trimComma(clickCategoryIdsBuffer.toString());
-						
-						// 计算session访问时长（秒）
-						long visitLength = (endTime.getTime() - startTime.getTime()) / 1000; 
-						
-						// 大家思考一下
-						// 我们返回的数据格式，即使<sessionid,partAggrInfo>
-						// 但是，这一步聚合完了以后，其实，我们是还需要将每一行数据，跟对应的用户信息进行聚合
-						// 问题就来了，如果是跟用户信息进行聚合的话，那么key，就不应该是sessionid
-						// 就应该是userid，才能够跟<userid,Row>格式的用户信息进行聚合
-						// 如果我们这里直接返回<sessionid,partAggrInfo>，还得再做一次mapToPair算子
-						// 将RDD映射成<userid,partAggrInfo>的格式，那么就多此一举
-						
-						// 所以，我们这里其实可以直接，返回的数据格式，就是<userid,partAggrInfo>
-						// 然后跟用户信息join的时候，将partAggrInfo关联上userInfo
-						// 然后再直接将返回的Tuple的key设置成sessionid
-						// 最后的数据格式，还是<sessionid,fullAggrInfo>
-						
-						// 聚合数据，用什么样的格式进行拼接？
-						// 我们这里统一定义，使用key=value|key=value
-						String partAggrInfo = Constants.FIELD_SESSION_ID + "=" + sessionid + "|"
-								+ Constants.FIELD_SEARCH_KEYWORDS + "=" + searchKeywords + "|"
-								+ Constants.FIELD_CLICK_CATEGORY_IDS + "=" + clickCategoryIds + "|"
-								+ Constants.FIELD_VISIT_LENGTH + "=" + visitLength + "|"
-								+ Constants.FIELD_STEP_LENGTH + "=" + stepLength + "|"
-								+ Constants.FIELD_START_TIME + "=" + DateUtils.formatTime(startTime);  
-						
-						return new Tuple2<Long, String>(userid, partAggrInfo);
+					}
+					if(clickCategoryId != null) {
+						if(!clickCategoryIdsBuffer.toString().contains(
+								String.valueOf(clickCategoryId))) {   
+							clickCategoryIdsBuffer.append(clickCategoryId + ",");  
+						}
 					}
 					
-				});
+					// 计算session开始和结束时间
+					Date actionTime = DateUtils.parseTime(row.getString(4));
+					
+					if(startTime == null) {
+						startTime = actionTime;
+					}
+					if(endTime == null) {
+						endTime = actionTime;
+					}
+					
+					if(actionTime.before(startTime)) {
+						startTime = actionTime;
+					}
+					if(actionTime.after(endTime)) {
+						endTime = actionTime;
+					}
+					
+					// 计算session访问步长
+					stepLength++;
+				}
+				
+				String searchKeywords = StringUtils.trimComma(searchKeywordsBuffer.toString());
+				String clickCategoryIds = StringUtils.trimComma(clickCategoryIdsBuffer.toString());
+				
+				// 计算session访问时长（秒）
+				long visitLength = (endTime.getTime() - startTime.getTime()) / 1000; 
+				
+				// 大家思考一下
+				// 我们返回的数据格式，即使<sessionid,partAggrInfo>
+				// 但是，这一步聚合完了以后，其实，我们是还需要将每一行数据，跟对应的用户信息进行聚合
+				// 问题就来了，如果是跟用户信息进行聚合的话，那么key，就不应该是sessionid
+				// 就应该是userid，才能够跟<userid,Row>格式的用户信息进行聚合
+				// 如果我们这里直接返回<sessionid,partAggrInfo>，还得再做一次mapToPair算子
+				// 将RDD映射成<userid,partAggrInfo>的格式，那么就多此一举
+				
+				// 所以，我们这里其实可以直接，返回的数据格式，就是<userid,partAggrInfo>
+				// 然后跟用户信息join的时候，将partAggrInfo关联上userInfo
+				// 然后再直接将返回的Tuple的key设置成sessionid
+				// 最后的数据格式，还是<sessionid,fullAggrInfo>
+				
+				// 聚合数据，用什么样的格式进行拼接？
+				// 我们这里统一定义，使用key=value|key=value
+				String partAggrInfo = Constants.FIELD_SESSION_ID + "=" + sessionid + "|"
+						+ Constants.FIELD_SEARCH_KEYWORDS + "=" + searchKeywords + "|"
+						+ Constants.FIELD_CLICK_CATEGORY_IDS + "=" + clickCategoryIds + "|"
+						+ Constants.FIELD_VISIT_LENGTH + "=" + visitLength + "|"
+						+ Constants.FIELD_STEP_LENGTH + "=" + stepLength + "|"
+						+ Constants.FIELD_START_TIME + "=" + DateUtils.formatTime(startTime);  
+				
+				return new Tuple2<Long, String>(userid, partAggrInfo);
+			
+		});
 		
 		// 查询所有用户数据，并映射成<userid,Row>的格式
 		String sql = "select * from user_info";  
 		JavaRDD<Row> userInfoRDD = sqlContext.sql(sql).javaRDD();
 		
-		JavaPairRDD<Long, Row> userid2InfoRDD = userInfoRDD.mapToPair(
-				
-				new PairFunction<Row, Long, Row>() {
-
-					private  final long serialVersionUID = 1L;
-
-					@Override
-					public Tuple2<Long, Row> call(Row row) throws Exception {
-						return new Tuple2<Long, Row>(row.getLong(0), row);
-					}
-					
-				});
+		JavaPairRDD<Long, Row> userid2InfoRDD = userInfoRDD.mapToPair(row ->{
+			return new Tuple2<Long, Row>(row.getLong(0), row);
+		});
 		
 		// 将session粒度聚合数据，与用户信息进行join
 		JavaPairRDD<Long, Tuple2<String, Row>> userid2FullInfoRDD = 
 				userid2PartAggrInfoRDD.join(userid2InfoRDD);
 		
 		// 对join起来的数据进行拼接，并且返回<sessionid,fullAggrInfo>格式的数据
-		JavaPairRDD<String, String> sessionid2FullAggrInfoRDD = userid2FullInfoRDD.mapToPair(
+		JavaPairRDD<String, String> sessionid2FullAggrInfoRDD = userid2FullInfoRDD.mapToPair(tuple ->{
+				String partAggrInfo = tuple._2._1;
+				Row userInfoRow = tuple._2._2;
 				
-				new PairFunction<Tuple2<Long,Tuple2<String,Row>>, String, String>() {
-
-					private  final long serialVersionUID = 1L;
-
-					@Override
-					public Tuple2<String, String> call(
-							Tuple2<Long, Tuple2<String, Row>> tuple)
-							throws Exception {
-						String partAggrInfo = tuple._2._1;
-						Row userInfoRow = tuple._2._2;
-						
-						String sessionid = StringUtils.getFieldFromConcatString(
-								partAggrInfo, "\\|", Constants.FIELD_SESSION_ID);
-						
-						int age = userInfoRow.getInt(3);
-						String professional = userInfoRow.getString(4);
-						String city = userInfoRow.getString(5);
-						String sex = userInfoRow.getString(6);
-						
-						String fullAggrInfo = partAggrInfo + "|"
-								+ Constants.FIELD_AGE + "=" + age + "|"
-								+ Constants.FIELD_PROFESSIONAL + "=" + professional + "|"
-								+ Constants.FIELD_CITY + "=" + city + "|"
-								+ Constants.FIELD_SEX + "=" + sex;
-						
-						return new Tuple2<String, String>(sessionid, fullAggrInfo);
-					}
-					
-				});
+				String sessionid = StringUtils.getFieldFromConcatString(
+						partAggrInfo, "\\|", Constants.FIELD_SESSION_ID);
+				
+				int age = userInfoRow.getInt(3);
+				String professional = userInfoRow.getString(4);
+				String city = userInfoRow.getString(5);
+				String sex = userInfoRow.getString(6);
+				
+				String fullAggrInfo = partAggrInfo + "|"
+						+ Constants.FIELD_AGE + "=" + age + "|"
+						+ Constants.FIELD_PROFESSIONAL + "=" + professional + "|"
+						+ Constants.FIELD_CITY + "=" + city + "|"
+						+ Constants.FIELD_SEX + "=" + sex;
+				
+				return new Tuple2<String, String>(sessionid, fullAggrInfo);
+			
+		});
 		
 		return sessionid2FullAggrInfoRDD;
 	}
@@ -947,6 +917,175 @@ public class UserVisitSessionAnalyzeSpark implements CommandLineRunner,Serializa
 		
 		//调用对应的DAO插入统计结果
 		sessionAggrStatService.insert(sessionAggrStat);
+	}
+	
+	
+	/**
+	 * 获取top10热门品类
+	 * @param filteredSessionid2AggrInfoRDD
+	 * @param sessionid2actionRDD
+	 */
+	private void getTop10Categary(JavaPairRDD<String, String> filteredSessionid2AggrInfoRDD,
+			JavaPairRDD<String, Row> sessionid2actionRDD) {
+		
+		/**
+		 * 第一步，获取符合条件的session访问过的所有品类
+		 */
+		
+		//获取符合条件的session访问明细
+		JavaPairRDD<String, Row> sessionid2detailRDD = filteredSessionid2AggrInfoRDD.join(sessionid2actionRDD).mapToPair(tuple -> {
+				return new Tuple2<String, Row>(tuple._1, tuple._2._2);
+		});
+		
+		//session访问过的所有品类id
+		JavaPairRDD<Long, Long> categoryIdRDD = sessionid2detailRDD.flatMapToPair(tuple -> {
+				Row row = tuple._2;
+				List<Tuple2<Long, Long>> list = new ArrayList<>();
+			
+				Long clickCategoryId = row.getLong(6);
+				if(clickCategoryId != null){
+					list.add(new Tuple2<Long, Long>(clickCategoryId, clickCategoryId));
+				}
+				String orderCategoryIds = row.getString(8);
+				if(orderCategoryIds != null){
+					String[] orderCategoryIdsSplited = orderCategoryIds.split(",");
+					for (String orderCategoryId : orderCategoryIdsSplited) {
+						list.add(new Tuple2<Long, Long>(Long.valueOf(orderCategoryId), Long.valueOf(orderCategoryId)));
+					}
+				}
+				String payCategoryIds = row.getString(10);
+				if(payCategoryIds != null){
+					String[] payCategoryIdsSplited = payCategoryIds.split(",");
+					for (String payCategoryId : payCategoryIdsSplited) {
+						list.add(new Tuple2<Long, Long>(Long.valueOf(payCategoryId), Long.valueOf(payCategoryId)));
+					}
+				}
+				
+				return list;
+		});
+		
+		/**
+		 * 第二步，计算各品类的点击，支付，下单次数
+		 */
+		
+		//访问明细中，其中三种访问行为是 点击，下单，支付， 分别计算其次数
+		
+		//计算各个品类的点击次数
+		JavaPairRDD<Long, Long> clickCategaryId2CountRDD = getClickCategaryId2CountRDD(sessionid2detailRDD);
+		//计算各个品类的下单次数
+		JavaPairRDD<Long, Long> orderCategaryId2CountRDD = getCategaryId2CountRDD(sessionid2detailRDD,8);
+		//计算各个品类的支付次数
+		JavaPairRDD<Long, Long> payCategaryId2CountRDD = getCategaryId2CountRDD(sessionid2detailRDD,10);
+		
+		/**
+		 * 第三步，join各品类与他们的点击，下单，支付的次数
+		 */
+		JavaPairRDD<Long, String> categaryId2CountRDD = joinCategoryAndData(categoryIdRDD,clickCategaryId2CountRDD,orderCategaryId2CountRDD,payCategaryId2CountRDD);
+		
+	}
+
+	/**
+	 * 连接品类RDD和数据RDD
+	 * @return
+	 */
+	private JavaPairRDD<Long, String> joinCategoryAndData(JavaPairRDD<Long, Long> categoryIdRDD,
+			JavaPairRDD<Long, Long> clickCategaryId2CountRDD, JavaPairRDD<Long, Long> orderCategaryId2CountRDD,
+			JavaPairRDD<Long, Long> payCategaryId2CountRDD) {
+		
+		JavaPairRDD<Long, Tuple2<Long, Optional<Long>>> tmpJoinRDD = categoryIdRDD.leftOuterJoin(clickCategaryId2CountRDD);
+		
+		JavaPairRDD<Long, String> tmpMapRDD = tmpJoinRDD.mapToPair(tuple ->{
+			Long categoryId = tuple._1;
+			Optional<Long> optional = tuple._2._2;
+			long clickCount = 0L;
+			if(optional.isPresent()){
+				clickCount = optional.get();
+			}
+			
+			String value = Constants.FIELD_CATEGORY_ID + "=" + categoryId + "|" +
+					Constants.FIELD_CLICK_COUNT + "=" + clickCount;
+			
+			return new Tuple2<Long,String>(categoryId,value);
+		});
+		
+		tmpMapRDD = tmpMapRDD.leftOuterJoin(orderCategaryId2CountRDD).mapToPair(tuple ->{
+			Long categoryId = tuple._1;
+			String value = tuple._2._1;
+			Optional<Long> optional = tuple._2._2;
+			long orderCount = 0L;
+			if(optional.isPresent()){
+				orderCount = optional.get();
+			}
+			
+			value = value + "|" + Constants.FIELD_ORDER_COUNT + "=" + orderCount;
+			
+			return new Tuple2<Long,String>(categoryId,value);
+		});
+		
+		tmpMapRDD = tmpMapRDD.leftOuterJoin(payCategaryId2CountRDD).mapToPair(tuple ->{
+			Long categoryId = tuple._1;
+			String value = tuple._2._1;
+			Optional<Long> optional = tuple._2._2;
+			long payCount = 0L;
+			if(optional.isPresent()){
+				payCount = optional.get();
+			}
+			
+			value = value + "|" + Constants.FIELD_PAY_COUNT + "=" + payCount;
+			
+			return new Tuple2<Long,String>(categoryId,value);
+		});
+		
+		return tmpMapRDD;
+	}
+
+
+	/**
+	 * 获取下单或支付次数RDD
+	 * @param sessionid2detailRDD
+	 * @return 
+	 * @return
+	 */
+	private JavaPairRDD<Long, Long> getCategaryId2CountRDD(JavaPairRDD<String, Row> sessionid2detailRDD,int index) {
+		JavaPairRDD<String, Row> actionRDD = sessionid2detailRDD.filter(tuple -> {
+			Row row = tuple._2;
+			return Long.valueOf(row.getString(index)) != null ? true : false;
+		});
+		JavaPairRDD<Long, Long> categaryIdRDD = actionRDD.flatMapToPair(tuple ->{
+			Row row = tuple._2;
+			String[] categaryIds = row.getString(index).split(",");
+			List<Tuple2<Long, Long>> list = new ArrayList<>();
+			for (String categaryId : categaryIds) {
+				list.add(new Tuple2<Long, Long>(Long.valueOf(categaryId),1L));
+			}
+			return list;
+		});
+		JavaPairRDD<Long, Long> categaryId2CountRDD = categaryIdRDD.reduceByKey((v1 , v2) ->{
+				return v1 + v2;
+		});
+		return categaryId2CountRDD;
+	}
+
+
+	/**
+	 * 获取点击次数RDD
+	 * @param sessionid2detailRDD
+	 * @return
+	 */
+	private JavaPairRDD<Long, Long> getClickCategaryId2CountRDD(JavaPairRDD<String, Row> sessionid2detailRDD) {
+		JavaPairRDD<String, Row> clickActionRDD = sessionid2detailRDD.filter(tuple -> {
+			Row row = tuple._2;
+			return Long.valueOf(row.getLong(6)) != null ? true : false;
+		});
+		JavaPairRDD<Long, Long> clickCategaryIdRDD = clickActionRDD.mapToPair(tuple ->{
+			Row row = tuple._2;
+			Long clickCategaryId = row.getLong(6);
+			return new Tuple2<Long, Long>(clickCategaryId,1L);
+		});
+		JavaPairRDD<Long, Long> clickCategaryId2CountRDD = clickCategaryIdRDD.reduceByKey((v1 , v2) ->{
+			return v1 + v2;
+		});
+		return clickCategaryId2CountRDD;
 	}
 	
 }
