@@ -16,9 +16,7 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFlatMapFunction;
-import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.Row;
@@ -35,10 +33,12 @@ import com.xuzhong.sparkproject.domain.SessionAggrStat;
 import com.xuzhong.sparkproject.domain.SessionDetail;
 import com.xuzhong.sparkproject.domain.SessionRandomExtract;
 import com.xuzhong.sparkproject.domain.Task;
+import com.xuzhong.sparkproject.domain.Top10Category;
 import com.xuzhong.sparkproject.service.SessionAggrStatService;
 import com.xuzhong.sparkproject.service.SessionDetailService;
 import com.xuzhong.sparkproject.service.SessionRandomExtractService;
 import com.xuzhong.sparkproject.service.TaskService;
+import com.xuzhong.sparkproject.service.Top10CategoryService;
 import com.xuzhong.sparkproject.util.ApplicationContextUtils;
 import com.xuzhong.sparkproject.util.Constants;
 import com.xuzhong.sparkproject.util.DateUtils;
@@ -86,10 +86,6 @@ public class UserVisitSessionAnalyzeSpark implements CommandLineRunner,Serializa
 	private transient SessionAggrStatService sessionAggrStatService;
 	@Autowired
 	private transient TaskService taskService;
-	@Autowired
-	private transient SessionRandomExtractService sessionRandomExtractService;
-	@Autowired
-	private transient SessionDetailService sessionDetailService;
 	
 	
 	public void  run(String... args) throws Exception {
@@ -222,7 +218,7 @@ public class UserVisitSessionAnalyzeSpark implements CommandLineRunner,Serializa
 		 * 
 		 */
 		
-		getTop10Categary(filteredSessionid2AggrInfoRDD,sessionid2actionRDD);
+		getTop10Categary(filteredSessionid2AggrInfoRDD,sessionid2actionRDD,taskId);
 		
 		// 关闭Spark上下文
 		sc.close(); 
@@ -486,8 +482,8 @@ public class UserVisitSessionAnalyzeSpark implements CommandLineRunner,Serializa
 				
 				new Function<Tuple2<String,String>, Boolean>() {
 			
-					private  final long serialVersionUID = 1L;
-			
+					private static final long serialVersionUID = 1L;
+
 					@Override
 					public Boolean call(Tuple2<String, String> tuple) throws Exception {
 						// 首先，从tuple中，获取聚合数据
@@ -752,6 +748,7 @@ public class UserVisitSessionAnalyzeSpark implements CommandLineRunner,Serializa
 					List<Integer> extractIndexList = dateHourExtractMap.get(date).get(hour);  
 					
 					int index = 0;
+					SessionRandomExtractService sessionRandomExtractService = ApplicationContextUtils.getBean(SessionRandomExtractService.class);
 					while(iterator.hasNext()) {
 						String sessionAggrInfo = iterator.next();
 						
@@ -770,8 +767,7 @@ public class UserVisitSessionAnalyzeSpark implements CommandLineRunner,Serializa
 							sessionRandomExtract.setClickCategoryIds(StringUtils.getFieldFromConcatString(
 									sessionAggrInfo, "\\|", Constants.FIELD_CLICK_CATEGORY_IDS));
 							
-							SessionRandomExtractService sessionRandomExtractService1 = ApplicationContextUtils.getBean(SessionRandomExtractService.class);
-							sessionRandomExtractService1.insert(sessionRandomExtract);  
+							sessionRandomExtractService.insert(sessionRandomExtract);  
 							
 							// 将sessionid加入list
 							extractSessionids.add(new Tuple2<String, String>(sessionid, sessionid));  
@@ -814,8 +810,8 @@ public class UserVisitSessionAnalyzeSpark implements CommandLineRunner,Serializa
 				sessionDetail.setPayCategoryIds(row.getString(10)); 
 				sessionDetail.setPayProductIds(row.getString(11));  
 				
-				SessionDetailService sessionDetailService1 = ApplicationContextUtils.getBean(SessionDetailService.class);
-				sessionDetailService1.insert(sessionDetail);  
+				SessionDetailService sessionDetailService = ApplicationContextUtils.getBean(SessionDetailService.class);
+				sessionDetailService.insert(sessionDetail);  
 			}
 		});
 		
@@ -902,7 +898,7 @@ public class UserVisitSessionAnalyzeSpark implements CommandLineRunner,Serializa
 		sessionAggrStat.setC1s3s(visit_length_1s_3s_ratio);
 		sessionAggrStat.setC4s6s(visit_length_4s_6s_ratio);
 		sessionAggrStat.setC7s9s(visit_length_7s_9s_ratio);
-		sessionAggrStat.setC1030(visit_length_10m_30m_ratio);
+		sessionAggrStat.setC1030(visit_length_10s_30s_ratio);
 		sessionAggrStat.setC3060(visit_length_30s_60s_ratio);
 		sessionAggrStat.setC1m3m(visit_length_1m_3m_ratio);
 		sessionAggrStat.setC3m10m(visit_length_3m_10m_ratio);
@@ -926,7 +922,7 @@ public class UserVisitSessionAnalyzeSpark implements CommandLineRunner,Serializa
 	 * @param sessionid2actionRDD
 	 */
 	private void getTop10Categary(JavaPairRDD<String, String> filteredSessionid2AggrInfoRDD,
-			JavaPairRDD<String, Row> sessionid2actionRDD) {
+			JavaPairRDD<String, Row> sessionid2actionRDD,int taskId) {
 		
 		/**
 		 * 第一步，获取符合条件的session访问过的所有品类
@@ -963,7 +959,8 @@ public class UserVisitSessionAnalyzeSpark implements CommandLineRunner,Serializa
 				
 				return list;
 		});
-		
+		//必须要进行去重
+		categoryIdRDD = categoryIdRDD.distinct();
 		/**
 		 * 第二步，计算各品类的点击，支付，下单次数
 		 */
@@ -981,6 +978,56 @@ public class UserVisitSessionAnalyzeSpark implements CommandLineRunner,Serializa
 		 * 第三步，join各品类与他们的点击，下单，支付的次数
 		 */
 		JavaPairRDD<Long, String> categaryId2CountRDD = joinCategoryAndData(categoryIdRDD,clickCategaryId2CountRDD,orderCategaryId2CountRDD,payCategaryId2CountRDD);
+		
+		/**
+		 * 第四步，自定义二次排序key
+		 */
+		
+		/**
+		 * 第五步，将数据映射成<CategorySortKey,info>格式的RDD，然后进行二次排序（降序）
+		 */
+		JavaPairRDD<CategorySortKey, String> sortKey2CountRDD = categaryId2CountRDD.mapToPair(tuple ->{
+			String info = tuple._2;
+			
+			long clickCount = Long.valueOf(StringUtils.getFieldFromConcatString(
+					info, "\\|", Constants.FIELD_CLICK_COUNT));  
+			long orderCount = Long.valueOf(StringUtils.getFieldFromConcatString(
+					info, "\\|", Constants.FIELD_ORDER_COUNT));  
+			long payCount = Long.valueOf(StringUtils.getFieldFromConcatString(
+					info, "\\|", Constants.FIELD_PAY_COUNT));
+			
+			CategorySortKey categorySortKey = new CategorySortKey(clickCount, orderCount, payCount);
+			
+			return new Tuple2<CategorySortKey, String>(categorySortKey, info);
+		});
+		JavaPairRDD<CategorySortKey,String> sortCategaryCountRDD = sortKey2CountRDD.sortByKey(false);
+		
+		/**
+		 * 第六步，取前10条数据,写入mysql
+		 */
+		Top10CategoryService top10CategoryService = ApplicationContextUtils.getBean(Top10CategoryService.class);
+		
+		List<Tuple2<CategorySortKey, String>> top10CategaryList = sortCategaryCountRDD.take(10);
+		for (Tuple2<CategorySortKey, String> tuple : top10CategaryList) {
+			String countInfo = tuple._2;
+			long categoryId = Long.valueOf(StringUtils.getFieldFromConcatString(
+					countInfo, "\\|", Constants.FIELD_CATEGORY_ID));  
+			long clickCount = Long.valueOf(StringUtils.getFieldFromConcatString(
+					countInfo, "\\|", Constants.FIELD_CLICK_COUNT));  
+			long orderCount = Long.valueOf(StringUtils.getFieldFromConcatString(
+					countInfo, "\\|", Constants.FIELD_ORDER_COUNT));  
+			long payCount = Long.valueOf(StringUtils.getFieldFromConcatString(
+					countInfo, "\\|", Constants.FIELD_PAY_COUNT));
+			
+			Top10Category top10Category = new Top10Category();
+			top10Category.setClickCount((int)clickCount);
+			top10Category.setOrderCount((int)orderCount);
+			top10Category.setPayCount((int)payCount);
+			top10Category.setTaskId(taskId);
+			top10Category.setCategoryId((int)categoryId);
+			
+			top10CategoryService.insert(top10Category);
+		}
 		
 	}
 
@@ -1025,7 +1072,7 @@ public class UserVisitSessionAnalyzeSpark implements CommandLineRunner,Serializa
 		tmpMapRDD = tmpMapRDD.leftOuterJoin(payCategaryId2CountRDD).mapToPair(tuple ->{
 			Long categoryId = tuple._1;
 			String value = tuple._2._1;
-			Optional<Long> optional = tuple._2._2;
+			Optional<Long> optional = tuple._2._2;	
 			long payCount = 0L;
 			if(optional.isPresent()){
 				payCount = optional.get();
@@ -1049,7 +1096,7 @@ public class UserVisitSessionAnalyzeSpark implements CommandLineRunner,Serializa
 	private JavaPairRDD<Long, Long> getCategaryId2CountRDD(JavaPairRDD<String, Row> sessionid2detailRDD,int index) {
 		JavaPairRDD<String, Row> actionRDD = sessionid2detailRDD.filter(tuple -> {
 			Row row = tuple._2;
-			return Long.valueOf(row.getString(index)) != null ? true : false;
+			return row.getString(index) != null ? true : false;
 		});
 		JavaPairRDD<Long, Long> categaryIdRDD = actionRDD.flatMapToPair(tuple ->{
 			Row row = tuple._2;
