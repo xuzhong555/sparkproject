@@ -1,6 +1,7 @@
 package com.xuzhong.sparkproject.spark;
 
 import java.io.Serializable;
+import java.util.List;
 
 import org.apache.spark.Accumulator;
 import org.apache.spark.SparkConf;
@@ -22,10 +23,14 @@ import com.xuzhong.sparkproject.service.TaskService;
 import com.xuzhong.sparkproject.sparkRDD.DateRangeRDD;
 import com.xuzhong.sparkproject.sparkRDD.FilteredSessionid2AggrInfoRDD;
 import com.xuzhong.sparkproject.sparkRDD.RandomExtractSessionRDD;
+import com.xuzhong.sparkproject.sparkRDD.SessionId2detailRDD;
 import com.xuzhong.sparkproject.sparkRDD.Sessionid2AggrInfoRDD;
 import com.xuzhong.sparkproject.sparkRDD.Top10CategaryRDD;
+import com.xuzhong.sparkproject.sparkRDD.Top10SessionRDD;
 import com.xuzhong.sparkproject.util.Constants;
 import com.xuzhong.sparkproject.util.ParamUtils;
+
+import scala.Tuple2;
 
 /**
  * 用户访问session分析Spark作业
@@ -111,6 +116,9 @@ public class UserVisitSessionAnalyzeSpark implements CommandLineRunner,Serializa
 		JavaPairRDD<String, String> filteredSessionid2AggrInfoRDD = FilteredSessionid2AggrInfoRDD.filterSessionAndAggrStat(
 				sessionid2AggrInfoRDD, taskParam, sessionAggrStatAccumulator);
 		
+		//通过筛选条件的session的访问明细数据RDD
+		JavaPairRDD<String, Row> sessionid2detailRDD = SessionId2detailRDD.getSessionId2detailRDD(filteredSessionid2AggrInfoRDD,sessionid2actionRDD);
+		
 		/**
 		 * 对于Accumulator这种分布式累加计算的变量的使用，有一个重要说明
 		 * 从Accumulator中，获取数据，插入数据库的时候，一定要，一定要，是在有某一个action操作以后
@@ -189,7 +197,11 @@ public class UserVisitSessionAnalyzeSpark implements CommandLineRunner,Serializa
 		 * 
 		 */
 		
-		Top10CategaryRDD.getTop10Categary(filteredSessionid2AggrInfoRDD,sessionid2actionRDD,taskId);
+		//获取top10热门品类,并写入mysql
+		List<Tuple2<CategorySortKey, String>> top10CategaryList = Top10CategaryRDD.getTop10Categary(sessionid2detailRDD,taskId);
+		
+		//获取top10活跃session，并写入mysql
+		Top10SessionRDD.getTop10Session(top10CategaryList,sessionid2detailRDD,taskId,sc);
 		
 		// 关闭Spark上下文
 		sc.close(); 

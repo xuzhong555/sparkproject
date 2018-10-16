@@ -23,18 +23,13 @@ public class Top10CategaryRDD {
 	 * 获取top10热门品类
 	 * @param filteredSessionid2AggrInfoRDD
 	 * @param sessionid2actionRDD
+	 * @return 
 	 */
-	public static void getTop10Categary(JavaPairRDD<String, String> filteredSessionid2AggrInfoRDD,
-			JavaPairRDD<String, Row> sessionid2actionRDD,int taskId) {
+	public static List<Tuple2<CategorySortKey, String>> getTop10Categary(JavaPairRDD<String, Row> sessionid2detailRDD,int taskId) {
 		
 		/**
 		 * 第一步，获取符合条件的session访问过的所有品类
 		 */
-		
-		//获取符合条件的session访问明细
-		JavaPairRDD<String, Row> sessionid2detailRDD = filteredSessionid2AggrInfoRDD.join(sessionid2actionRDD).mapToPair(tuple -> {
-				return new Tuple2<String, Row>(tuple._1, tuple._2._2);
-		});
 		
 		//session访问过的所有品类id
 		JavaPairRDD<Long, Long> categoryIdRDD = sessionid2detailRDD.flatMapToPair(tuple -> {
@@ -131,7 +126,7 @@ public class Top10CategaryRDD {
 			
 			top10CategoryService.insert(top10Category);
 		}
-		
+		return top10CategaryList;
 	}
 
 	/**
