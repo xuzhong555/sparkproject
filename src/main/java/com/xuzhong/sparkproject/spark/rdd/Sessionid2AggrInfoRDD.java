@@ -1,4 +1,4 @@
-package com.xuzhong.sparkproject.sparkRDD;
+package com.xuzhong.sparkproject.spark.rdd;
 
 import java.util.Date;
 import java.util.Iterator;
@@ -19,20 +19,15 @@ public class Sessionid2AggrInfoRDD {
 	
 	/**
 	 * 对行为数据按session粒度进行聚合
-	 * @param actionRDD 行为数据RDD
+	 * @param sessionid2actionRDD2 行为数据RDD
 	 * @return session粒度聚合数据
 	 */
 	public static  JavaPairRDD<String, String> aggregateBySession(
-			SQLContext sqlContext, JavaRDD<Row> actionRDD) {
-		// 现在actionRDD中的元素是Row，一个Row就是一行用户访问行为记录，比如一次点击或者搜索
-		// 我们现在需要将这个Row映射成<sessionid,Row>的格式
-		JavaPairRDD<String, Row> sessionid2ActionRDD = actionRDD.mapToPair(row -> {
-				return new Tuple2<String, Row>(row.getString(2), row);
-		});
+			SQLContext sqlContext, JavaPairRDD<String, Row> sessionid2actionRDD2) {
 		
 		// 对行为数据按session粒度进行分组
 		JavaPairRDD<String, Iterable<Row>> sessionid2ActionsRDD = 
-				sessionid2ActionRDD.groupByKey();
+				sessionid2actionRDD2.groupByKey();
 		
 		// 对每一个session分组进行聚合，将session中所有的搜索词和点击品类都聚合起来
 		// 到此为止，获取的数据格式，如下：<userid,partAggrInfo(sessionid,searchKeywords,clickCategoryIds)>

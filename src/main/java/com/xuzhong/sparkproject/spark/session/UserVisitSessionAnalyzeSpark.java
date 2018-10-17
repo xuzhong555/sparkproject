@@ -1,4 +1,4 @@
-package com.xuzhong.sparkproject.spark;
+package com.xuzhong.sparkproject.spark.session;
 
 import java.io.Serializable;
 import java.util.List;
@@ -12,6 +12,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.hive.HiveContext;
+import org.apache.spark.storage.StorageLevel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -20,16 +21,17 @@ import com.alibaba.fastjson.JSONObject;
 import com.xuzhong.sparkproject.conf.ConfigurationManager;
 import com.xuzhong.sparkproject.domain.Task;
 import com.xuzhong.sparkproject.service.TaskService;
-import com.xuzhong.sparkproject.sparkRDD.DateRangeRDD;
-import com.xuzhong.sparkproject.sparkRDD.FilteredSessionid2AggrInfoRDD;
-import com.xuzhong.sparkproject.sparkRDD.RandomExtractSessionRDD;
-import com.xuzhong.sparkproject.sparkRDD.SessionId2detailRDD;
-import com.xuzhong.sparkproject.sparkRDD.Sessionid2AggrInfoRDD;
-import com.xuzhong.sparkproject.sparkRDD.Top10CategaryRDD;
-import com.xuzhong.sparkproject.sparkRDD.Top10SessionRDD;
+import com.xuzhong.sparkproject.spark.rdd.DateRangeRDD;
+import com.xuzhong.sparkproject.spark.rdd.FilteredSessionid2AggrInfoRDD;
+import com.xuzhong.sparkproject.spark.rdd.RandomExtractSessionRDD;
+import com.xuzhong.sparkproject.spark.rdd.SessionId2detailRDD;
+import com.xuzhong.sparkproject.spark.rdd.Sessionid2AggrInfoRDD;
+import com.xuzhong.sparkproject.spark.rdd.Top10CategaryRDD;
+import com.xuzhong.sparkproject.spark.rdd.Top10SessionRDD;
 import com.xuzhong.sparkproject.util.Constants;
 import com.xuzhong.sparkproject.util.ParamUtils;
 
+import parquet.it.unimi.dsi.fastutil.ints.IntList;
 import scala.Tuple2;
 
 /**
@@ -74,6 +76,10 @@ public class UserVisitSessionAnalyzeSpark implements CommandLineRunner,Serializa
 //		args = new String[]{"1"};  
 		// 构建Spark上下文
 		SparkConf conf = new SparkConf()
+				.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+				.registerKryoClasses(new Class[]{
+						CategorySortKey.class,
+						IntList.class})
 				.setAppName(Constants.SPARK_APP_NAME_SESSION)
 				.setMaster("local");    
 		JavaSparkContext sc = new JavaSparkContext(conf);
@@ -97,13 +103,29 @@ public class UserVisitSessionAnalyzeSpark implements CommandLineRunner,Serializa
 		//[(9e20665ff7d046538aed9c45928f260f,[2018-09-17,73,9e20665ff7d046538aed9c45928f260f,9,2018-09-17 14:42:20,null,46,69,null,null,null,null])]
 		JavaPairRDD<String, Row> sessionid2actionRDD = DateRangeRDD.getSessionid2ActionRDD(actionRDD);
 		
+		/**
+		 * 持久化，很简单，就是对RDD调用persist()方法，并传入一个持久化级别
+		 * 
+		 * 如果是persist(StorageLevel.MEMORY_ONLY())，纯内存，无序列化，那么就可以用cache()方法来替代
+		 * StorageLevel.MEMORY_ONLY_SER()，第二选择
+		 * StorageLevel.MEMORY_AND_DISK()，第三选择
+		 * StorageLevel.MEMORY_AND_DISK_SER()，第四选择
+		 * StorageLevel.DISK_ONLY()，第五选择
+		 * 
+		 * 如果内存充足，要使用双副本高可靠机制
+		 * 选择后缀带_2的策略
+		 * StorageLevel.MEMORY_ONLY_2()
+		 * 
+		 */
+		sessionid2actionRDD = sessionid2actionRDD.persist(StorageLevel.MEMORY_ONLY());
+		
 		// 首先，可以将行为数据，按照session_id进行groupByKey分组
 		// 此时的数据的粒度就是session粒度了，然后呢，可以将session粒度的数据
 		// 与用户信息数据，进行join
 		// 然后就可以获取到session粒度的数据，同时呢，数据里面还包含了session对应的user的信息
 		// 到这里为止，获取的数据是<sessionid,(sessionid,searchKeywords,clickCategoryIds,age,professional,city,sex)>  
 		//[(d9784352d65d49858fc84dddee21dbae,sessionid=d9784352d65d49858fc84dddee21dbae|searchKeywords=|clickCategoryIds=0,69|visitLength=217|stepLength=2|startTime=Mon Sep 17 02:19:51 CST 2018|age=44|professional=professional32|city=city38|sex=female)]
-		JavaPairRDD<String, String> sessionid2AggrInfoRDD = Sessionid2AggrInfoRDD.aggregateBySession(sqlContext, actionRDD);
+		JavaPairRDD<String, String> sessionid2AggrInfoRDD = Sessionid2AggrInfoRDD.aggregateBySession(sqlContext, sessionid2actionRDD);
 		
 		// 接着，就要针对session粒度的聚合数据，按照使用者指定的筛选参数进行数据过滤
 		// 相当于我们自己编写的算子，是要访问外面的任务参数对象的
@@ -115,10 +137,13 @@ public class UserVisitSessionAnalyzeSpark implements CommandLineRunner,Serializa
 		//[(d9784352d65d49858fc84dddee21dbae,sessionid=d9784352d65d49858fc84dddee21dbae|searchKeywords=|clickCategoryIds=0,69|visitLength=217|stepLength=2|startTime=Mon Sep 17 02:19:51 CST 2018|age=44|professional=professional32|city=city38|sex=female)]
 		JavaPairRDD<String, String> filteredSessionid2AggrInfoRDD = FilteredSessionid2AggrInfoRDD.filterSessionAndAggrStat(
 				sessionid2AggrInfoRDD, taskParam, sessionAggrStatAccumulator);
+		//持久化
+		filteredSessionid2AggrInfoRDD = filteredSessionid2AggrInfoRDD.persist(StorageLevel.MEMORY_ONLY());
 		
 		//通过筛选条件的session的访问明细数据RDD
 		JavaPairRDD<String, Row> sessionid2detailRDD = SessionId2detailRDD.getSessionId2detailRDD(filteredSessionid2AggrInfoRDD,sessionid2actionRDD);
-		
+		//持久化
+		sessionid2detailRDD = sessionid2detailRDD.persist(StorageLevel.MEMORY_ONLY());
 		/**
 		 * 对于Accumulator这种分布式累加计算的变量的使用，有一个重要说明
 		 * 从Accumulator中，获取数据，插入数据库的时候，一定要，一定要，是在有某一个action操作以后
@@ -127,11 +152,11 @@ public class UserVisitSessionAnalyzeSpark implements CommandLineRunner,Serializa
 		 * 是不是在calculateAndPersisitAggrStat方法之后，运行一个action操作，比如count、take
 		 * 不对！！！
 		 * 必须把能够触发job执行的操作，放在最终写入MySQL方法之前
-		 * 计算出来的结果，在J2EE中，是怎么显示的，是用两张柱状图显示
+		 * 计算出来的结果，在J2EE中，是怎么显示的，是用两张柱状图显示	
 		 */
-		System.err.println("filteredSessionid2AggrInfoRDD" + filteredSessionid2AggrInfoRDD.count());
+		System.err.println("filteredSessionid2AggrInfoRDD.count======" + filteredSessionid2AggrInfoRDD.count());
 		
-		RandomExtractSessionRDD.randomExtractSession(taskId,filteredSessionid2AggrInfoRDD,sessionid2actionRDD);
+		RandomExtractSessionRDD.randomExtractSession(sc,taskId,filteredSessionid2AggrInfoRDD,sessionid2detailRDD);
 		
 		/**
 		 * 特别说明

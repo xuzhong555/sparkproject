@@ -1,4 +1,4 @@
-package com.xuzhong.sparkproject.sparkRDD;
+package com.xuzhong.sparkproject.spark.rdd;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,7 +9,7 @@ import org.apache.spark.sql.Row;
 import com.google.common.base.Optional;
 import com.xuzhong.sparkproject.domain.Top10Category;
 import com.xuzhong.sparkproject.service.Top10CategoryService;
-import com.xuzhong.sparkproject.spark.CategorySortKey;
+import com.xuzhong.sparkproject.spark.session.CategorySortKey;
 import com.xuzhong.sparkproject.util.ApplicationContextUtils;
 import com.xuzhong.sparkproject.util.Constants;
 import com.xuzhong.sparkproject.util.StringUtils;

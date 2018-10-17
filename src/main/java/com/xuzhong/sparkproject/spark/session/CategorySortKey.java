@@ -1,4 +1,4 @@
-package com.xuzhong.sparkproject.spark;
+package com.xuzhong.sparkproject.spark.session;
 
 import java.io.Serializable;
 

@@ -1,4 +1,4 @@
-package com.xuzhong.sparkproject.sparkRDD;
+package com.xuzhong.sparkproject.spark.rdd;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -8,8 +8,10 @@ import java.util.Map;
 import java.util.Random;
 
 import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.api.java.function.VoidFunction;
+import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.sql.Row;
 
 import com.xuzhong.sparkproject.domain.SessionAggrStat;
@@ -31,9 +33,10 @@ public class RandomExtractSessionRDD {
 	
 	/**
 	 * 随机抽取session
+	 * @param sc 
 	 * @param sessionid2AggrInfoRDD  
 	 */
-	public static void randomExtractSession(final int taskId,
+	public static void randomExtractSession(JavaSparkContext sc, final int taskId,
 			JavaPairRDD<String, String> filteredSessionid2AggrInfoRDD,
 			JavaPairRDD<String, Row> sessionid2actionRDD) {
 		JavaPairRDD<String, String> time2sessionidRDD = filteredSessionid2AggrInfoRDD.mapToPair(tuple2 -> {
@@ -137,6 +140,13 @@ public class RandomExtractSessionRDD {
 			}
 		}
 		
+		/**
+		 * 广播变量，很简单
+		 * 其实就是SparkContext的broadcast()方法，传入你要广播的变量，即可
+		 */		
+		
+		Broadcast<Map<String, Map<String, List<Integer>>>> dateHourExtractMapBroadcast = 
+				sc.broadcast(dateHourExtractMap);
 
 		/**
 		 * 第三步：遍历每天每小时的session，然后根据随机索引进行抽取
@@ -168,6 +178,13 @@ public class RandomExtractSessionRDD {
 					String date = dateHour.split("_")[0];
 					String hour = dateHour.split("_")[1];
 					Iterator<String> iterator = tuple._2.iterator();
+					
+					/**
+					 * 使用广播变量的时候
+					 * 直接调用广播变量（Broadcast类型）的value() / getValue() 
+					 * 可以获取到之前封装的广播变量
+					 */
+					Map<String, Map<String, List<Integer>>> dateHourExtractMap = dateHourExtractMapBroadcast.value();
 					
 					List<Integer> extractIndexList = dateHourExtractMap.get(date).get(hour);  
 					

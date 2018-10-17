@@ -1,4 +1,4 @@
-package com.xuzhong.sparkproject.sparkRDD;
+package com.xuzhong.sparkproject.spark.rdd;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,7 +15,7 @@ import com.xuzhong.sparkproject.dao.Top10CategorySessionMapper;
 import com.xuzhong.sparkproject.domain.SessionDetail;
 import com.xuzhong.sparkproject.domain.Top10CategorySession;
 import com.xuzhong.sparkproject.service.SessionDetailService;
-import com.xuzhong.sparkproject.spark.CategorySortKey;
+import com.xuzhong.sparkproject.spark.session.CategorySortKey;
 import com.xuzhong.sparkproject.util.ApplicationContextUtils;
 import com.xuzhong.sparkproject.util.Constants;
 import com.xuzhong.sparkproject.util.StringUtils;
@@ -60,7 +60,7 @@ public class Top10SessionRDD {
 			Map<Long, Long> categaryCountMap = new HashMap<Long, Long>();
 
 			while (iterator.hasNext()) {
-				Row row = iterator.next();
+				Row row = iterator.next(); 
 				if (row.get(6) != null) {
 					long categaryid = row.getLong(6);
 					Long count = categaryCountMap.get(categaryid);

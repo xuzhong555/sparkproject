@@ -1,4 +1,4 @@
-package com.xuzhong.sparkproject.sparkRDD;
+package com.xuzhong.sparkproject.spark.rdd;
 
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
