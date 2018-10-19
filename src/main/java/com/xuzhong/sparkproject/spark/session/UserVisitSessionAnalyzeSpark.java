@@ -1,35 +1,33 @@
 package com.xuzhong.sparkproject.spark.session;
 
 import java.io.Serializable;
+import java.util.Date;
 import java.util.List;
 
 import org.apache.spark.Accumulator;
 import org.apache.spark.SparkConf;
-import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SQLContext;
-import org.apache.spark.sql.hive.HiveContext;
 import org.apache.spark.storage.StorageLevel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 import com.alibaba.fastjson.JSONObject;
-import com.xuzhong.sparkproject.conf.ConfigurationManager;
 import com.xuzhong.sparkproject.domain.Task;
 import com.xuzhong.sparkproject.service.TaskService;
-import com.xuzhong.sparkproject.spark.rdd.DateRangeRDD;
-import com.xuzhong.sparkproject.spark.rdd.FilteredSessionid2AggrInfoRDD;
-import com.xuzhong.sparkproject.spark.rdd.RandomExtractSessionRDD;
-import com.xuzhong.sparkproject.spark.rdd.SessionId2detailRDD;
-import com.xuzhong.sparkproject.spark.rdd.Sessionid2AggrInfoRDD;
-import com.xuzhong.sparkproject.spark.rdd.Top10CategaryRDD;
-import com.xuzhong.sparkproject.spark.rdd.Top10SessionRDD;
+import com.xuzhong.sparkproject.spark.session.rdd.FilteredSessionid2AggrInfoRDD;
+import com.xuzhong.sparkproject.spark.session.rdd.RandomExtractSessionRDD;
+import com.xuzhong.sparkproject.spark.session.rdd.SessionId2detailRDD;
+import com.xuzhong.sparkproject.spark.session.rdd.Sessionid2AggrInfoRDD;
+import com.xuzhong.sparkproject.spark.session.rdd.Top10CategaryRDD;
+import com.xuzhong.sparkproject.spark.session.rdd.Top10SessionRDD;
 import com.xuzhong.sparkproject.util.Constants;
 import com.xuzhong.sparkproject.util.ParamUtils;
+import com.xuzhong.sparkproject.util.SparkUtils;
 
 import parquet.it.unimi.dsi.fastutil.ints.IntList;
 import scala.Tuple2;
@@ -83,25 +81,29 @@ public class UserVisitSessionAnalyzeSpark implements CommandLineRunner,Serializa
 				.setAppName(Constants.SPARK_APP_NAME_SESSION)
 				.setMaster("local");    
 		JavaSparkContext sc = new JavaSparkContext(conf);
-		SQLContext sqlContext = getSQLContext(sc.sc());
+		SQLContext sqlContext = SparkUtils.getSQLContext(sc.sc());
 		
 		// 生成模拟测试数据
 		//user_visit_action [2018-09-17,73,9e20665ff7d046538aed9c45928f260f,9,2018-09-17 14:42:20,null,46,69,null,null,null,null]
 		//user_info[0,user0,name0,2,professional20,city63,female]
-		mockData(sc, sqlContext);
+		SparkUtils.mockData(sc, sqlContext);
 		
 		// 首先得查询出来指定的任务，并获取任务的查询参数
-		int taskId = ParamUtils.getTaskIdFromArgs(args);
+		int taskId = ParamUtils.getTaskIdFromArgs(args, Constants.SPARK_LOCAL_TASKID_PAGE);
 		Task task = taskService.selectByPrimaryKey(taskId);
+		if(task == null) {
+			System.out.println(new Date() + ": cannot find this task with id [" + taskId + "].");  
+			return;
+		}
 		JSONObject taskParam = JSONObject.parseObject(task.getTaskParam());
 
 		
 		// 如果要进行session粒度的数据聚合
 		// 首先要从user_visit_action表中，查询出来指定日期范围内的行为数据
 		//[2018-09-17,73,9e20665ff7d046538aed9c45928f260f,9,2018-09-17 14:42:20,null,46,69,null,null,null,null]
-		JavaRDD<Row> actionRDD = DateRangeRDD.getActionRDDByDateRange(sqlContext, taskParam);
+		JavaRDD<Row> actionRDD = SparkUtils.getActionRDDByDateRange(sqlContext, taskParam);
 		//[(9e20665ff7d046538aed9c45928f260f,[2018-09-17,73,9e20665ff7d046538aed9c45928f260f,9,2018-09-17 14:42:20,null,46,69,null,null,null,null])]
-		JavaPairRDD<String, Row> sessionid2actionRDD = DateRangeRDD.getSessionid2ActionRDD(actionRDD);
+		JavaPairRDD<String, Row> sessionid2actionRDD = SparkUtils.getSessionid2ActionRDD(actionRDD);
 		
 		/**
 		 * 持久化，很简单，就是对RDD调用persist()方法，并传入一个持久化级别
@@ -231,34 +233,4 @@ public class UserVisitSessionAnalyzeSpark implements CommandLineRunner,Serializa
 		// 关闭Spark上下文
 		sc.close(); 
 	}
-
-
-	/**
-	 * 获取SQLContext
-	 * 如果是在本地测试环境的话，那么就生成SQLContext对象
-	 * 如果是在生产环境运行的话，那么就生成HiveContext对象
-	 * @param sc SparkContext
-	 * @return SQLContext
-	 */
-	private  SQLContext getSQLContext(SparkContext sc) {
-		boolean local = ConfigurationManager.getBoolean(Constants.SPARK_LOCAL);
-		if(local) {
-			return new SQLContext(sc);
-		} else {
-			return new HiveContext(sc);
-		}
-	}
-	
-	/**
-	 * 生成模拟数据（只有本地模式，才会去生成模拟数据）
-	 * @param sc 
-	 * @param sqlContext
-	 */
-	private  void mockData(JavaSparkContext sc, SQLContext sqlContext) {
-		boolean local = ConfigurationManager.getBoolean(Constants.SPARK_LOCAL);
-		if(local) {
-			MockData.mock(sc, sqlContext);  
-		}
-	}
-	
 }

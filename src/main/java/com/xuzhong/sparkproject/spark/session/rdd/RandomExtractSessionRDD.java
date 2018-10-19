@@ -1,4 +1,4 @@
-package com.xuzhong.sparkproject.spark.rdd;
+package com.xuzhong.sparkproject.spark.session.rdd;
 
 import java.util.ArrayList;
 import java.util.HashMap;

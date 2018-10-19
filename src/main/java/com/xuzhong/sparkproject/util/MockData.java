@@ -1,4 +1,4 @@
-package com.xuzhong.sparkproject.spark.session;
+package com.xuzhong.sparkproject.util;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,9 +14,6 @@ import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructType;
-
-import com.xuzhong.sparkproject.util.DateUtils;
-import com.xuzhong.sparkproject.util.StringUtils;
 
 /**
  * 模拟数据程序

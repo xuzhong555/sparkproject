@@ -12,7 +12,7 @@ public class SpringContextUtils {
     private static ApplicationContext applicationContext;
 
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        this.applicationContext = applicationContext;
+        SpringContextUtils.applicationContext = applicationContext;
     }
 
     /**

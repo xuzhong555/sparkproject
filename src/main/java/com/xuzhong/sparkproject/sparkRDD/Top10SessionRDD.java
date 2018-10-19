@@ -1,4 +1,4 @@
-package com.xuzhong.sparkproject.spark.rdd;
+package com.xuzhong.sparkproject.sparkRDD;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -60,10 +60,10 @@ public class Top10SessionRDD {
 			Map<Long, Long> categaryCountMap = new HashMap<Long, Long>();
 
 			while (iterator.hasNext()) {
-				Row row = iterator.next(); 
+				Row row = iterator.next();
 				if (row.get(6) != null) {
 					long categaryid = row.getLong(6);
-					Long count = categaryCountMap.get(categaryid);
+					Long count = categaryCountMap.get("categaryid");
 					if (count == null) {
 						count = 0L;
 					}

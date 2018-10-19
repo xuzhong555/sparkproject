@@ -1,4 +1,4 @@
-package com.xuzhong.sparkproject.spark.rdd;
+package com.xuzhong.sparkproject.spark.session.rdd;
 
 import org.apache.spark.Accumulator;
 import org.apache.spark.api.java.JavaPairRDD;
