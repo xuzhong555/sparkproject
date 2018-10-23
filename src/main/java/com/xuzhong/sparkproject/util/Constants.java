@@ -6,6 +6,7 @@ package com.xuzhong.sparkproject.util;
  *
  */
 public interface Constants {
+	
 
 	/**
 	 * 项目配置相关的常量
@@ -22,6 +23,9 @@ public interface Constants {
 	String SPARK_LOCAL_TASKID_SESSION = "spark.local.taskid.session";
 	String SPARK_LOCAL_TASKID_PAGE = "spark.local.taskid.page";
 	String SPARK_LOCAL_TASKID_PRODUCT = "spark.local.taskid.product";
+	String SPARK_TASKNAME_SESSION = "spark.taskName.session";
+	String SPARK_TASKNAME_PAGE = "spark.taskName.page";
+	String SPARK_TASKNAME_PRODUCT = "spark.taskName.product";
 	String KAFKA_METADATA_BROKER_LIST = "kafka.metadata.broker.list";
 	String KAFKA_TOPICS = "kafka.topics";
 	

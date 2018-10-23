@@ -18,12 +18,12 @@ import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SQLContext;
+import org.springframework.stereotype.Component;
 
 import com.alibaba.fastjson.JSONObject;
 import com.xuzhong.sparkproject.dao.PageSplitConvertRateMapper;
 import com.xuzhong.sparkproject.domain.PageSplitConvertRate;
 import com.xuzhong.sparkproject.domain.Task;
-import com.xuzhong.sparkproject.service.TaskService;
 import com.xuzhong.sparkproject.util.ApplicationContextUtils;
 import com.xuzhong.sparkproject.util.Constants;
 import com.xuzhong.sparkproject.util.DateUtils;
@@ -38,10 +38,12 @@ import scala.Tuple2;
  * @author xuzhong
  *
  */
+@Component
 public class PageOneStepConvertRateSpark {
 	
 
-	public static void main(String[] args) {
+	public static void run(Task task) {
+		System.out.println("=============PageOneStepConvertRateSpark : run=============");
 		
 		// 1、构造Spark上下文
 		SparkConf conf = new SparkConf()
@@ -55,15 +57,7 @@ public class PageOneStepConvertRateSpark {
 		SparkUtils.mockData(sc, sqlContext);  
 		
 		// 3、查询任务，获取任务的参数
-		int taskid = ParamUtils.getTaskIdFromArgs(args, Constants.SPARK_LOCAL_TASKID_PAGE);
-		
-		TaskService taskService = ApplicationContextUtils.getBean(TaskService.class);
-		Task task = taskService.selectByPrimaryKey(taskid);
-		if(task == null) {
-			System.out.println(new Date() + ": cannot find this task with id [" + taskid + "].");  
-			return;
-		}
-		
+		int taskid = task.getTaskId();		
 		JSONObject taskParam = JSONObject.parseObject(task.getTaskParam());
 		
 		// 4、查询指定日期范围内的用户访问行为数据

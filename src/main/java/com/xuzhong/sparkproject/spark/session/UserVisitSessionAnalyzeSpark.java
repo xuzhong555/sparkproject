@@ -1,7 +1,5 @@
 package com.xuzhong.sparkproject.spark.session;
 
-import java.io.Serializable;
-import java.util.Date;
 import java.util.List;
 
 import org.apache.spark.Accumulator;
@@ -12,13 +10,10 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.storage.StorageLevel;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 import com.alibaba.fastjson.JSONObject;
 import com.xuzhong.sparkproject.domain.Task;
-import com.xuzhong.sparkproject.service.TaskService;
 import com.xuzhong.sparkproject.spark.session.rdd.FilteredSessionid2AggrInfoRDD;
 import com.xuzhong.sparkproject.spark.session.rdd.RandomExtractSessionRDD;
 import com.xuzhong.sparkproject.spark.session.rdd.SessionId2detailRDD;
@@ -26,7 +21,6 @@ import com.xuzhong.sparkproject.spark.session.rdd.Sessionid2AggrInfoRDD;
 import com.xuzhong.sparkproject.spark.session.rdd.Top10CategaryRDD;
 import com.xuzhong.sparkproject.spark.session.rdd.Top10SessionRDD;
 import com.xuzhong.sparkproject.util.Constants;
-import com.xuzhong.sparkproject.util.ParamUtils;
 import com.xuzhong.sparkproject.util.SparkUtils;
 
 import parquet.it.unimi.dsi.fastutil.ints.IntList;
@@ -60,18 +54,13 @@ import scala.Tuple2;
  *
  */
 @Component
-public class UserVisitSessionAnalyzeSpark implements CommandLineRunner,Serializable{
+public class UserVisitSessionAnalyzeSpark {
 	
 
-	private static final long serialVersionUID = 13990295814000107L;
 	
-	
-	@Autowired
-	private transient TaskService taskService;
-	
-	
-	public void  run(String... args) throws Exception {
-//		args = new String[]{"1"};  
+	public static void run(Task task) {
+		System.out.println("=============UserVisitSessionAnalyzeSpark : run=============");
+		
 		// 构建Spark上下文
 		SparkConf conf = new SparkConf()
 				.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
@@ -89,12 +78,7 @@ public class UserVisitSessionAnalyzeSpark implements CommandLineRunner,Serializa
 		SparkUtils.mockData(sc, sqlContext);
 		
 		// 首先得查询出来指定的任务，并获取任务的查询参数
-		int taskId = ParamUtils.getTaskIdFromArgs(args, Constants.SPARK_LOCAL_TASKID_PAGE);
-		Task task = taskService.selectByPrimaryKey(taskId);
-		if(task == null) {
-			System.out.println(new Date() + ": cannot find this task with id [" + taskId + "].");  
-			return;
-		}
+		int taskId = task.getTaskId();
 		JSONObject taskParam = JSONObject.parseObject(task.getTaskParam());
 
 		
