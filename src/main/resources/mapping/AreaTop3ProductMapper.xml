@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.xuzhong.sparkproject.dao.AreaTop3ProductMapper" >
+  <resultMap id="BaseResultMap" type="com.xuzhong.sparkproject.domain.AreaTop3Product" >
+    <id column="id" property="id" jdbcType="INTEGER" />
+    <result column="task_id" property="taskId" jdbcType="BIGINT" />
+    <result column="area" property="area" jdbcType="VARCHAR" />
+    <result column="area_level" property="areaLevel" jdbcType="VARCHAR" />
+    <result column="product_id" property="productId" jdbcType="BIGINT" />
+    <result column="click_count" property="clickCount" jdbcType="BIGINT" />
+    <result column="city_infos" property="cityInfos" jdbcType="VARCHAR" />
+    <result column="product_name" property="productName" jdbcType="VARCHAR" />
+    <result column="product_status" property="productStatus" jdbcType="VARCHAR" />
+  </resultMap>
+  <sql id="Example_Where_Clause" >
+    <where >
+      <foreach collection="oredCriteria" item="criteria" separator="or" >
+        <if test="criteria.valid" >
+          <trim prefix="(" suffix=")" prefixOverrides="and" >
+            <foreach collection="criteria.criteria" item="criterion" >
+              <choose >
+                <when test="criterion.noValue" >
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue" >
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue" >
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue" >
+                  and ${criterion.condition}
+                  <foreach collection="criterion.value" item="listItem" open="(" close=")" separator="," >
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Update_By_Example_Where_Clause" >
+    <where >
+      <foreach collection="example.oredCriteria" item="criteria" separator="or" >
+        <if test="criteria.valid" >
+          <trim prefix="(" suffix=")" prefixOverrides="and" >
+            <foreach collection="criteria.criteria" item="criterion" >
+              <choose >
+                <when test="criterion.noValue" >
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue" >
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue" >
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue" >
+                  and ${criterion.condition}
+                  <foreach collection="criterion.value" item="listItem" open="(" close=")" separator="," >
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Base_Column_List" >
+    id, task_id, area, area_level, product_id, click_count, city_infos, product_name, 
+    product_status
+  </sql>
+  <select id="selectByExample" resultMap="BaseResultMap" parameterType="com.xuzhong.sparkproject.domain.AreaTop3ProductExample" >
+    select
+    <if test="distinct" >
+      distinct
+    </if>
+    'true' as QUERYID,
+    <include refid="Base_Column_List" />
+    from area_top3_product
+    <if test="_parameter != null" >
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null" >
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Integer" >
+    select 
+    <include refid="Base_Column_List" />
+    from area_top3_product
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer" >
+    delete from area_top3_product
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <delete id="deleteByExample" parameterType="com.xuzhong.sparkproject.domain.AreaTop3ProductExample" >
+    delete from area_top3_product
+    <if test="_parameter != null" >
+      <include refid="Example_Where_Clause" />
+    </if>
+  </delete>
+  <insert id="insert" parameterType="com.xuzhong.sparkproject.domain.AreaTop3Product" useGeneratedKeys="true" keyProperty="id" >
+    insert into area_top3_product (task_id, area, area_level, 
+      product_id, click_count, city_infos, 
+      product_name, product_status)
+    values (#{taskId,jdbcType=BIGINT}, #{area,jdbcType=VARCHAR}, #{areaLevel,jdbcType=VARCHAR}, 
+      #{productId,jdbcType=BIGINT}, #{clickCount,jdbcType=BIGINT}, #{cityInfos,jdbcType=VARCHAR}, 
+      #{productName,jdbcType=VARCHAR}, #{productStatus,jdbcType=VARCHAR})
+  </insert>
+  <insert id="insertSelective" parameterType="com.xuzhong.sparkproject.domain.AreaTop3Product" useGeneratedKeys="true" keyProperty="id" >
+    insert into area_top3_product
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="taskId != null" >
+        task_id,
+      </if>
+      <if test="area != null" >
+        area,
+      </if>
+      <if test="areaLevel != null" >
+        area_level,
+      </if>
+      <if test="productId != null" >
+        product_id,
+      </if>
+      <if test="clickCount != null" >
+        click_count,
+      </if>
+      <if test="cityInfos != null" >
+        city_infos,
+      </if>
+      <if test="productName != null" >
+        product_name,
+      </if>
+      <if test="productStatus != null" >
+        product_status,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="taskId != null" >
+        #{taskId,jdbcType=BIGINT},
+      </if>
+      <if test="area != null" >
+        #{area,jdbcType=VARCHAR},
+      </if>
+      <if test="areaLevel != null" >
+        #{areaLevel,jdbcType=VARCHAR},
+      </if>
+      <if test="productId != null" >
+        #{productId,jdbcType=BIGINT},
+      </if>
+      <if test="clickCount != null" >
+        #{clickCount,jdbcType=BIGINT},
+      </if>
+      <if test="cityInfos != null" >
+        #{cityInfos,jdbcType=VARCHAR},
+      </if>
+      <if test="productName != null" >
+        #{productName,jdbcType=VARCHAR},
+      </if>
+      <if test="productStatus != null" >
+        #{productStatus,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <select id="countByExample" parameterType="com.xuzhong.sparkproject.domain.AreaTop3ProductExample" resultType="java.lang.Integer" >
+    select count(*) from area_top3_product
+    <if test="_parameter != null" >
+      <include refid="Example_Where_Clause" />
+    </if>
+  </select>
+  <update id="updateByExampleSelective" parameterType="map" >
+    update area_top3_product
+    <set >
+      <if test="record.id != null" >
+        id = #{record.id,jdbcType=INTEGER},
+      </if>
+      <if test="record.taskId != null" >
+        task_id = #{record.taskId,jdbcType=BIGINT},
+      </if>
+      <if test="record.area != null" >
+        area = #{record.area,jdbcType=VARCHAR},
+      </if>
+      <if test="record.areaLevel != null" >
+        area_level = #{record.areaLevel,jdbcType=VARCHAR},
+      </if>
+      <if test="record.productId != null" >
+        product_id = #{record.productId,jdbcType=BIGINT},
+      </if>
+      <if test="record.clickCount != null" >
+        click_count = #{record.clickCount,jdbcType=BIGINT},
+      </if>
+      <if test="record.cityInfos != null" >
+        city_infos = #{record.cityInfos,jdbcType=VARCHAR},
+      </if>
+      <if test="record.productName != null" >
+        product_name = #{record.productName,jdbcType=VARCHAR},
+      </if>
+      <if test="record.productStatus != null" >
+        product_status = #{record.productStatus,jdbcType=VARCHAR},
+      </if>
+    </set>
+    <if test="_parameter != null" >
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExample" parameterType="map" >
+    update area_top3_product
+    set id = #{record.id,jdbcType=INTEGER},
+      task_id = #{record.taskId,jdbcType=BIGINT},
+      area = #{record.area,jdbcType=VARCHAR},
+      area_level = #{record.areaLevel,jdbcType=VARCHAR},
+      product_id = #{record.productId,jdbcType=BIGINT},
+      click_count = #{record.clickCount,jdbcType=BIGINT},
+      city_infos = #{record.cityInfos,jdbcType=VARCHAR},
+      product_name = #{record.productName,jdbcType=VARCHAR},
+      product_status = #{record.productStatus,jdbcType=VARCHAR}
+    <if test="_parameter != null" >
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByPrimaryKeySelective" parameterType="com.xuzhong.sparkproject.domain.AreaTop3Product" >
+    update area_top3_product
+    <set >
+      <if test="taskId != null" >
+        task_id = #{taskId,jdbcType=BIGINT},
+      </if>
+      <if test="area != null" >
+        area = #{area,jdbcType=VARCHAR},
+      </if>
+      <if test="areaLevel != null" >
+        area_level = #{areaLevel,jdbcType=VARCHAR},
+      </if>
+      <if test="productId != null" >
+        product_id = #{productId,jdbcType=BIGINT},
+      </if>
+      <if test="clickCount != null" >
+        click_count = #{clickCount,jdbcType=BIGINT},
+      </if>
+      <if test="cityInfos != null" >
+        city_infos = #{cityInfos,jdbcType=VARCHAR},
+      </if>
+      <if test="productName != null" >
+        product_name = #{productName,jdbcType=VARCHAR},
+      </if>
+      <if test="productStatus != null" >
+        product_status = #{productStatus,jdbcType=VARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.xuzhong.sparkproject.domain.AreaTop3Product" >
+    update area_top3_product
+    set task_id = #{taskId,jdbcType=BIGINT},
+      area = #{area,jdbcType=VARCHAR},
+      area_level = #{areaLevel,jdbcType=VARCHAR},
+      product_id = #{productId,jdbcType=BIGINT},
+      click_count = #{clickCount,jdbcType=BIGINT},
+      city_infos = #{cityInfos,jdbcType=VARCHAR},
+      product_name = #{productName,jdbcType=VARCHAR},
+      product_status = #{productStatus,jdbcType=VARCHAR}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+</mapper>

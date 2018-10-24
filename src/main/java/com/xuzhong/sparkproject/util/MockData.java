@@ -23,7 +23,7 @@ import org.apache.spark.sql.types.StructType;
 public class MockData {
 
 	/**
-	 * 弄你数据
+	 * 模拟数据
 	 * @param sc
 	 * @param sqlContext
 	 */
@@ -43,12 +43,13 @@ public class MockData {
 			for(int j = 0; j < 10; j++) {
 				String sessionid = UUID.randomUUID().toString().replace("-", "");  
 				String baseActionTime = date + " " + random.nextInt(23);
+				
+				Long clickCategoryId = null;
 				  
 				for(int k = 0; k < random.nextInt(100); k++) {
 					long pageid = random.nextInt(10);    
 					String actionTime = baseActionTime + ":" + StringUtils.fulfuill(String.valueOf(random.nextInt(59))) + ":" + StringUtils.fulfuill(String.valueOf(random.nextInt(59)));
 					String searchKeyword = null;
-					Long clickCategoryId = null;
 					Long clickProductId = null;
 					String orderCategoryIds = null;
 					String orderProductIds = null;
@@ -59,7 +60,9 @@ public class MockData {
 					if("search".equals(action)) {
 						searchKeyword = searchKeywords[random.nextInt(10)];   
 					} else if("click".equals(action)) {
-						clickCategoryId = Long.valueOf(String.valueOf(random.nextInt(100)));    
+						if(clickCategoryId == null) {
+							clickCategoryId = Long.valueOf(String.valueOf(random.nextInt(100)));    
+						}
 						clickProductId = Long.valueOf(String.valueOf(random.nextInt(100)));  
 					} else if("order".equals(action)) {
 						orderCategoryIds = String.valueOf(random.nextInt(100));  
@@ -73,7 +76,8 @@ public class MockData {
 							pageid, actionTime, searchKeyword,
 							clickCategoryId, clickProductId,
 							orderCategoryIds, orderProductIds,
-							payCategoryIds, payProductIds);
+							payCategoryIds, payProductIds, 
+							Long.valueOf(String.valueOf(random.nextInt(10))));    
 					rows.add(row);
 				}
 			}
@@ -93,13 +97,14 @@ public class MockData {
 				DataTypes.createStructField("order_category_ids", DataTypes.StringType, true),
 				DataTypes.createStructField("order_product_ids", DataTypes.StringType, true),
 				DataTypes.createStructField("pay_category_ids", DataTypes.StringType, true),
-				DataTypes.createStructField("pay_product_ids", DataTypes.StringType, true)));
+				DataTypes.createStructField("pay_product_ids", DataTypes.StringType, true),
+				DataTypes.createStructField("city_id", DataTypes.LongType, true)));
 		
 		DataFrame df = sqlContext.createDataFrame(rowsRDD, schema);
 		
 		df.registerTempTable("user_visit_action");  
 		for(Row _row : df.take(1)) {
-			System.err.println(_row);  
+			System.out.println(_row);  
 		}
 		
 		/**
@@ -135,10 +140,40 @@ public class MockData {
 		
 		DataFrame df2 = sqlContext.createDataFrame(rowsRDD, schema2);
 		for(Row _row : df2.take(1)) {
-			System.err.println(_row);  
+			System.out.println(_row);  
 		}
 		
 		df2.registerTempTable("user_info");  
+		
+		/**
+		 * ==================================================================
+		 */
+		rows.clear();
+		
+		int[] productStatus = new int[]{0, 1};
+		
+		for(int i = 0; i < 100; i ++) {
+			long productId = i;
+			String productName = "product" + i;
+			String extendInfo = "{\"product_status\": " + productStatus[random.nextInt(2)] + "}";    
+			
+			Row row = RowFactory.create(productId, productName, extendInfo);
+			rows.add(row);
+		}
+		
+		rowsRDD = sc.parallelize(rows);
+		
+		StructType schema3 = DataTypes.createStructType(Arrays.asList(
+				DataTypes.createStructField("product_id", DataTypes.LongType, true),
+				DataTypes.createStructField("product_name", DataTypes.StringType, true),
+				DataTypes.createStructField("extend_info", DataTypes.StringType, true)));
+		
+		DataFrame df3 = sqlContext.createDataFrame(rowsRDD, schema3);
+		for(Row _row : df3.take(1)) {
+			System.out.println(_row);  
+		}
+		
+		df3.registerTempTable("product_info"); 
 	}
 	
 }
