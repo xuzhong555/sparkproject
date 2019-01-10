@@ -23,7 +23,7 @@ import com.xuzhong.sparkproject.spark.session.rdd.Top10SessionRDD;
 import com.xuzhong.sparkproject.util.Constants;
 import com.xuzhong.sparkproject.util.SparkUtils;
 
-import parquet.it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.ints.IntList;
 import scala.Tuple2;
 
 /**
@@ -72,6 +72,13 @@ public class UserVisitSessionAnalyzeSpark {
 		JavaSparkContext sc = new JavaSparkContext(conf);
 		SQLContext sqlContext = SparkUtils.getSQLContext(sc.sc());
 		
+		/**
+		 * 比如，获取top10热门品类功能中，二次排序，自定义了一个Key
+		 * 那个key是需要在进行shuffle的时候，进行网络传输的，因此也是要求实现序列化的
+		 * 启用Kryo机制以后，就会用Kryo去序列化和反序列化CategorySortKey
+		 * 所以这里要求，为了获取最佳性能，注册一下我们自定义的类
+		 */
+		
 		// 生成模拟测试数据
 		//user_visit_action [2018-09-17,73,9e20665ff7d046538aed9c45928f260f,9,2018-09-17 14:42:20,null,46,69,null,null,null,null]
 		//user_info[0,user0,name0,2,professional20,city63,female]
@@ -85,6 +92,18 @@ public class UserVisitSessionAnalyzeSpark {
 		// 如果要进行session粒度的数据聚合
 		// 首先要从user_visit_action表中，查询出来指定日期范围内的行为数据
 		//[2018-09-17,73,9e20665ff7d046538aed9c45928f260f,9,2018-09-17 14:42:20,null,46,69,null,null,null,null]
+		/**
+		 * actionRDD，就是一个公共RDD
+		 * 第一，要用ationRDD，获取到一个公共的sessionid为key的PairRDD
+		 * 第二，actionRDD，用在了session聚合环节里面
+		 * 
+		 * sessionid为key的PairRDD，是确定了，在后面要多次使用的
+		 * 1、与通过筛选的sessionid进行join，获取通过筛选的session的明细数据
+		 * 2、将这个RDD，直接传入aggregateBySession方法，进行session聚合统计
+		 * 
+		 * 重构完以后，actionRDD，就只在最开始，使用一次，用来生成以sessionid为key的RDD
+		 * 
+		 */
 		JavaRDD<Row> actionRDD = SparkUtils.getActionRDDByDateRange(sqlContext, taskParam);
 		//[(9e20665ff7d046538aed9c45928f260f,[2018-09-17,73,9e20665ff7d046538aed9c45928f260f,9,2018-09-17 14:42:20,null,46,69,null,null,null,null])]
 		JavaPairRDD<String, Row> sessionid2actionRDD = SparkUtils.getSessionid2ActionRDD(actionRDD);

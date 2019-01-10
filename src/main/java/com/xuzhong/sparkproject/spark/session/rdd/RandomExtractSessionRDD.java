@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 
 import org.apache.spark.api.java.JavaPairRDD;
@@ -26,6 +27,8 @@ import com.xuzhong.sparkproject.util.DateUtils;
 import com.xuzhong.sparkproject.util.NumberUtils;
 import com.xuzhong.sparkproject.util.StringUtils;
 
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntList;
 import scala.Tuple2;
 
 public class RandomExtractSessionRDD {
@@ -139,14 +142,45 @@ public class RandomExtractSessionRDD {
 				}
 			}
 		}
+		/**
+		 * fastutil的使用，很简单，比如List<Integer>的list，对应到fastutil，就是IntList
+		 * 重构上面的dateHourExtractMap
+		 */
+		// <date,<hour,(3,5,20,102)>>  
+		Map<String, Map<String, IntList>> fastutilDateHourExtractMap = 
+				new HashMap<String, Map<String, IntList>>();
+		
+		
+		for(Entry<String, Map<String, List<Integer>>> dateHourExtractEntry : dateHourExtractMap.entrySet()) {
+			String date = dateHourExtractEntry.getKey();
+			Map<String, List<Integer>> hourExtractMap = dateHourExtractEntry.getValue();
+			
+			Map<String, IntList> fastutilHourExtractMap = new HashMap<String, IntList>();
+			
+			for(Map.Entry<String, List<Integer>> hourExtractEntry : hourExtractMap.entrySet()) {
+				String hour = hourExtractEntry.getKey();
+				List<Integer> extractList = hourExtractEntry.getValue();
+				
+				IntList fastutilExtractList = new IntArrayList();
+				
+				for(int i = 0; i < extractList.size(); i++) {
+					fastutilExtractList.add(extractList.get(i));  
+				}
+				
+				fastutilHourExtractMap.put(hour, fastutilExtractList);
+			}
+			
+			fastutilDateHourExtractMap.put(date, fastutilHourExtractMap);
+		}
+		
 		
 		/**
 		 * 广播变量，很简单
 		 * 其实就是SparkContext的broadcast()方法，传入你要广播的变量，即可
 		 */		
 		
-		Broadcast<Map<String, Map<String, List<Integer>>>> dateHourExtractMapBroadcast = 
-				sc.broadcast(dateHourExtractMap);
+		final Broadcast<Map<String, Map<String, IntList>>> dateHourExtractMapBroadcast = 
+				sc.broadcast(fastutilDateHourExtractMap);
 
 		/**
 		 * 第三步：遍历每天每小时的session，然后根据随机索引进行抽取
@@ -184,7 +218,7 @@ public class RandomExtractSessionRDD {
 					 * 直接调用广播变量（Broadcast类型）的value() / getValue() 
 					 * 可以获取到之前封装的广播变量
 					 */
-					Map<String, Map<String, List<Integer>>> dateHourExtractMap = dateHourExtractMapBroadcast.value();
+					Map<String, Map<String, IntList>> dateHourExtractMap = dateHourExtractMapBroadcast.value();
 					
 					List<Integer> extractIndexList = dateHourExtractMap.get(date).get(hour);  
 					

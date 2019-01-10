@@ -212,6 +212,11 @@
             <artifactId>druid</artifactId>
             <version>1.0.20</version>
         </dependency>
+        <dependency>
+            <groupId>fastutil</groupId>
+            <artifactId>fastutil</artifactId>
+            <version>5.0.9</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

@@ -16,7 +16,7 @@ public class SparkController {
 	
 	private static String session = ConfigurationManager.getProperty(Constants.SPARK_TASKNAME_SESSION);
 	private static String page = ConfigurationManager.getProperty(Constants.SPARK_TASKNAME_PAGE);
-	private static String area = ConfigurationManager.getProperty(Constants.SPARK_TASKNAME_PAGE);
+	private static String area = ConfigurationManager.getProperty(Constants.SPARK_TASKNAME_AREA);
 	
 	public static void doTask(int taskId) {
 		TaskService taskService = ApplicationContextUtils.getBean(TaskService.class);

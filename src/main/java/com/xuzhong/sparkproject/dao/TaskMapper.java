@@ -1,12 +1,12 @@
 package com.xuzhong.sparkproject.dao;
 
-import com.xuzhong.sparkproject.domain.Task;
-import com.xuzhong.sparkproject.domain.TaskExample;
 import java.util.List;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.springframework.stereotype.Repository;
+
+import com.xuzhong.sparkproject.domain.Task;
+import com.xuzhong.sparkproject.domain.TaskExample;
 
 @Mapper
 public interface TaskMapper {
