@@ -63,14 +63,21 @@ public class UserVisitSessionAnalyzeSpark {
 		
 		// 构建Spark上下文
 		SparkConf conf = new SparkConf()
-				.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+				.setAppName(Constants.SPARK_APP_NAME_SESSION)
+//				.set("spark.default.parallelism", "100")//设置一个Spark Application的并行度
+				.set("spark.storage.memoryFraction", "0.3")//reduce端内存占比  默认0.2
+				.set("spark.shuffle.file.buffer", "64")//map端内存缓冲  默认32k
+				.set("spark.shuffle.consolidateFiles", "true")//合并map端输出文件
+				.set("spark.shuffle.memoryFraction", "0.3")    
+				.set("spark.reducer.maxSizeInFlight", "24")  
+				.set("spark.shuffle.io.maxRetries", "60")  
+				.set("spark.shuffle.io.retryWait", "60") 
+				.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")//ryo序列化
 				.registerKryoClasses(new Class[]{
 						CategorySortKey.class,
-						IntList.class})
-				.setAppName(Constants.SPARK_APP_NAME_SESSION)
-				.setMaster("local");    
-		JavaSparkContext sc = new JavaSparkContext(conf);
-		SQLContext sqlContext = SparkUtils.getSQLContext(sc.sc());
+						IntList.class});
+		
+		SparkUtils.setMaster(conf);  
 		
 		/**
 		 * 比如，获取top10热门品类功能中，二次排序，自定义了一个Key
@@ -78,6 +85,10 @@ public class UserVisitSessionAnalyzeSpark {
 		 * 启用Kryo机制以后，就会用Kryo去序列化和反序列化CategorySortKey
 		 * 所以这里要求，为了获取最佳性能，注册一下我们自定义的类
 		 */
+		
+		JavaSparkContext sc = new JavaSparkContext(conf);
+		SQLContext sqlContext = SparkUtils.getSQLContext(sc.sc());		
+		
 		
 		// 生成模拟测试数据
 		//user_visit_action [2018-09-17,73,9e20665ff7d046538aed9c45928f260f,9,2018-09-17 14:42:20,null,46,69,null,null,null,null]

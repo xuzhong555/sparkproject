@@ -218,18 +218,82 @@ public class Top10CategaryRDD {
 	 * @return
 	 */
 	public static JavaPairRDD<Long, Long> getClickCategaryId2CountRDD(JavaPairRDD<String, Row> sessionid2detailRDD) {
+		/**
+		 * 说明一下：
+		 * 
+		 * 这儿，是对完整的数据进行了filter过滤，过滤出来点击行为的数据
+		 * 点击行为的数据其实只占总数据的一小部分
+		 * 所以过滤以后的RDD，每个partition的数据量，很有可能跟我们之前说的一样，会很不均匀
+		 * 而且数据量肯定会变少很多
+		 * 
+		 * 所以针对这种情况，还是比较合适用一下coalesce算子的，在filter过后去减少partition的数量
+		 * 
+		 */
+		/**
+		 * 对这个coalesce操作做一个说明
+		 * 
+		 * 我们在这里用的模式都是local模式，主要是用来测试，所以local模式下，不用去设置分区和并行度的数量
+		 * local模式自己本身就是进程内模拟的集群来执行，本身性能就很高
+		 * 而且对并行度、partition数量都有一定的内部的优化
+		 * 
+		 * 这里我们再自己去设置，就有点画蛇添足
+		 * 
+		 * 但是就是跟大家说明一下，coalesce算子的使用，即可
+		 * 
+		 */
 		JavaPairRDD<String, Row> clickActionRDD = sessionid2detailRDD.filter(tuple -> {
 			Row row = tuple._2;
 			return Long.valueOf(row.getLong(6)) != null ? true : false;
 		});
-		JavaPairRDD<Long, Long> clickCategaryIdRDD = clickActionRDD.mapToPair(tuple ->{
+		JavaPairRDD<Long, Long> clickCategoryIdRDD = clickActionRDD.mapToPair(tuple ->{
 			Row row = tuple._2;
 			Long clickCategaryId = row.getLong(6);
 			return new Tuple2<Long, Long>(clickCategaryId,1L);
 		});
-		JavaPairRDD<Long, Long> clickCategaryId2CountRDD = clickCategaryIdRDD.reduceByKey((v1 , v2) ->{
+		JavaPairRDD<Long, Long> clickCategaryId2CountRDD = clickCategoryIdRDD.reduceByKey((v1 , v2) ->{
 			return v1 + v2;
 		});
+		/**
+		 * 提升shuffle reduce端并行度 --1000
+		 */
+//		JavaPairRDD<Long, Long> clickCategaryId2CountRDD = clickCategaryIdRDD.reduceByKey((v1 , v2) ->{
+//			return v1 + v2;
+//		},1000);
+		/**
+		 * 使用随机key实现双重聚合
+		 */
+//		/**
+//		 * 第一步，给每个key打上一个随机数
+//		 */
+//		JavaPairRDD<String, Long> mappedClickCategoryIdRDD = clickCategoryIdRDD.mapToPair((tuple) ->{
+//				Random random = new Random();
+//				int prefix = random.nextInt(10);
+//				return new Tuple2<String, Long>(prefix + "_" + tuple._1, tuple._2);
+//			
+//		});
+//		
+//		/**
+//		 * 第二步，执行第一轮局部聚合
+//		 */
+//		JavaPairRDD<String, Long> firstAggrRDD = mappedClickCategoryIdRDD.reduceByKey((v1,v2) -> {
+//				return v1 + v2;
+//		});
+//		
+//		/**
+//		 * 第三步，去除掉每个key的前缀
+//		 */
+//		JavaPairRDD<Long, Long> restoredRDD = firstAggrRDD.mapToPair((tuple) -> {
+//				long categoryId = Long.valueOf(tuple._1.split("_")[1]);  
+//				return new Tuple2<Long, Long>(categoryId, tuple._2);  
+//		});
+//		
+//		/**
+//		 * 第四步，最第二轮全局的聚合
+//		 */
+//		JavaPairRDD<Long, Long> clickCategoryId2CountRDD = restoredRDD.reduceByKey((v1,v2) -> {
+//				return v1 + v2;
+//		});
+		
 		return clickCategaryId2CountRDD;
 	}
 }

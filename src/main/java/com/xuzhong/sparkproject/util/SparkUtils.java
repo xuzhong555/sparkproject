@@ -82,7 +82,7 @@ public class SparkUtils {
 		DataFrame actionDF = sqlContext.sql(sql);
 		
 		/**
-		 * 这里就很有可能发生上面说的问题
+		 * 这里就很有可能发生Spark SQL低并行度的性能问题
 		 * 比如说，Spark SQl默认就给第一个stage设置了20个task，但是根据你的数据量以及算法的复杂度
 		 * 实际上，你需要1000个task去并行执行
 		 * 
