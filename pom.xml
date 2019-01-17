@@ -10,6 +10,7 @@
     <packaging>jar</packaging>
     <name>sparkproject</name>
     <description>Demo project for Spring Boot</description>
+    <!-- 测试idea提交 -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
